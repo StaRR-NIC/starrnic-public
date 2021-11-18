@@ -80,18 +80,27 @@ module byte_counter_250mhz #(
   input                     axis_aclk
 );
 
+  // Reset signals in two clock domains
+  wire axis_aresetn;
   wire axil_aresetn;
+  wire [2:0] clk_bundle;
+  wire [2:0] rst_bundle;
 
-  // Reset is clocked by the 125MHz AXI-Lite clock
+  // Two reset signals for the 2 clocks (AXI-Lite 125MHz and AXI-Stream 250MHz)
   generic_reset #(
-    .NUM_INPUT_CLK  (1),
+    .NUM_INPUT_CLK  (2),
     .RESET_DURATION (100)
   ) reset_inst (
     .mod_rstn     (mod_rstn),
     .mod_rst_done (mod_rst_done),
-    .clk          (axil_aclk),
-    .rstn         (axil_aresetn)
+    .clk          (clk_bundle),
+    .rstn         (rst_bundle)
   );
+
+  assign clk_bundle[0] = axil_aclk;
+  assign clk_bundle[1] = axis_aclk;
+  assign axil_aresetn = rst_bundle[0];
+  assign axis_aresetn = rst_bundle[1];
 
   axi_lite_slave #(
     .REG_ADDR_W (12),
