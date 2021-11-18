@@ -17,7 +17,7 @@
 // *************************************************************************
 `include "open_nic_shell_macros.vh"
 `timescale 1ns/1ps
-module p2p_250mhz #(
+module byte_counter_250mhz #(
   parameter int NUM_INTF = 1
 ) (
   input                     s_axil_awvalid,
@@ -180,4 +180,4 @@ module p2p_250mhz #(
   end
   endgenerate
 
-endmodule: p2p_250mhz
+endmodule: byte_counter_250mhz
