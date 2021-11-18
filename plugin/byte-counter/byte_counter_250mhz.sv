@@ -86,6 +86,10 @@ module byte_counter_250mhz #(
   wire [2:0] clk_bundle;
   wire [2:0] rst_bundle;
 
+  // Wires connecting counter registers
+  wire [NUM_INTF*16-1:0] size;
+  wire    [NUM_INTF-1:0] size_valid;
+
   // Two reset signals for the 2 clocks (AXI-Lite 125MHz and AXI-Stream 250MHz)
   generic_reset #(
     .NUM_INPUT_CLK  (2),
@@ -127,6 +131,27 @@ module byte_counter_250mhz #(
     .aresetn        (axil_aresetn)
   );
 
+  // Counters for each INTF
+  generate for (genvar i = 0; i < NUM_INTF; i++) begin
+    axi_stream_size_counter #(
+      .TDATA_W (512)
+    ) byte_counter_inst (
+      .p_axis_tvalid    (s_axis_qdma_h2c_tvalid[i]),
+      .p_axis_tkeep     (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
+      .p_axis_tlast     (s_axis_qdma_h2c_tlast[i]),
+      .p_axis_tuser_mty (0),
+      .p_axis_tready    (s_axis_qdma_h2c_tready[i]),
+
+      .size_valid       (size_valid[i]),
+      .size             (size[`getvec(16, i)]),
+
+      .aclk             (axis_aclk),
+      .aresetn          (axil_aresetn)
+    );
+  end
+  endgenerate
+
+  // Per INTF Pipeline
   generate for (genvar i = 0; i < NUM_INTF; i++) begin
     wire [47:0] axis_qdma_h2c_tuser;
     wire [47:0] axis_qdma_c2h_tuser;
