@@ -97,11 +97,11 @@ module byte_counter_250mhz #(
   localparam REG_BYTE_COUNT_IF1 = 12'h000;
   localparam REG_BYTE_COUNT_IF2 = 12'h004;
 
-  wire                  reg_en;
-  wire                  reg_we;
-  wire [REG_ADDR_W-1:0] reg_addr;
-  wire           [31:0] reg_din;
-  reg            [31:0] reg_dout;
+  wire                    reg_en;
+  wire                    reg_we;
+  wire [C_REG_ADDR_W-1:0] reg_addr;
+  wire             [31:0] reg_din;
+  reg              [31:0] reg_dout;
 
   // Two reset signals for the 2 clocks (0: AXI-Lite 125MHz and 1: AXI-Stream 250MHz)
   generic_reset #(
@@ -278,13 +278,10 @@ module byte_counter_250mhz #(
           reg_dout[15:0] <= size[15:0];
           reg_dout[31:16] <= 0;
         end
-        generate if (NUM_INTF == 2) begin
-          REG_BYTE_COUNT_IF2: begin
-          reg_dout[15:0] <= size[31:16];
-          reg_dout[31:16] <= 0;
-          end
+        REG_BYTE_COUNT_IF2: begin
+        reg_dout[15:0] <= size[NUM_INTF*16-16+:16];
+        reg_dout[31:16] <= 0;
         end
-        endgenerate
         default: begin
           reg_dout <= 32'hDEADBEEF;
         end
