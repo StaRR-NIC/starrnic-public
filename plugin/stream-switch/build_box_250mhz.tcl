@@ -15,4 +15,4 @@
 # limitations under the License.
 #
 # *************************************************************************
-read_verilog -quiet -sv byte_counter_250mhz.sv
+read_verilog -quiet -sv stream_switch_250mhz.sv

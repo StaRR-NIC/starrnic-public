@@ -15,16 +15,16 @@
 // limitations under the License.
 //
 // *************************************************************************
-// Address map for the box running at 250MHz (through PCI-e BAR2 1MB)
+// Address map for the box running at 250MHz (through PCI-e BAR2 4MB)
 //
-// System-level address range: 0x40000 - 0xFFFFF
+// System-level address range: 0x100000 - 0x1FFFFF
 //
 // --------------------------------------------------
-//   BaseAddr |  HighAddr |  Module
+//   BaseAddr  |  HighAddr  |  Module
 // --------------------------------------------------
-//   0x0000   |  0x0FFF   |  Port-to-port
+//   0x00000   |  0xBFFFF   |  Port-to-port (12 * 2^16 addresses > 19 bits)
 // --------------------------------------------------
-//   0x1000   |  0x1FFF   |  Dummy
+//   0xC0000   |  0xFFFFF   |  Dummy (4 * 2^16 addresses = 18 bits)
 // --------------------------------------------------
 `timescale 1ns/1ps
 module box_250mhz_address_map (
