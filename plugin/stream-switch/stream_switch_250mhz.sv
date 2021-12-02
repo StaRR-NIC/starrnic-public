@@ -178,22 +178,38 @@ module stream_switch_250mhz #(
       wire  [48*PORT_COUNT-1:0] axis_combiner_tuser;
       wire     [PORT_COUNT-1:0] axis_combiner_tready;
 
-      // merging/demerging
-      assign axis_s2p2p_tvalid = axis_splitter_tvalid[0+:1];
-      assign axis_s2p2p_tdata = axis_splitter_tdata[0+:512];
-      assign axis_s2p2p_tkeep = axis_splitter_tkeep[0+:64];
-      assign axis_s2p2p_tlast = axis_splitter_tlast[0+:1];
-      assign axis_s2p2p_tuser = axis_splitter_tuser[0+:48];
-      assign axis_s2p2p_tready = axis_splitter_tready[0+:1];
+      reg      [PORT_COUNT-1:0] combiner_decode_error;
 
-      assign axis_s2p2p_tvalid = axis_splitter_tvalid[1+:1];
-      assign axis_s2p2p_tdata = axis_splitter_tdata[512+:512];
-      assign axis_s2p2p_tkeep = axis_splitter_tkeep[64+:64];
-      assign axis_s2p2p_tlast = axis_splitter_tlast[1+:1];
-      assign axis_s2p2p_tuser = axis_splitter_tuser[48+:48];
-      assign axis_s2p2p_tready = axis_splitter_tready[1+:1];
+      // Merging/Demerging
+      // Splitter
+      assign axis_s2p2p_tvalid             = axis_splitter_tvalid[0+:1];
+      assign axis_s2p2p_tdata              = axis_splitter_tdata[0+:512];
+      assign axis_s2p2p_tkeep              = axis_splitter_tkeep[0+:64];
+      assign axis_s2p2p_tlast              = axis_splitter_tlast[0+:1];
+      assign axis_s2p2p_tuser              = axis_splitter_tuser[0+:48];
+      assign axis_s2p2p_tready             = axis_splitter_tready[0+:1];
 
-      // TODO(108anup): do merging and demergeing for combiner connectors.
+      assign axis_s2p2p_tvalid             = axis_splitter_tvalid[1+:1];
+      assign axis_s2p2p_tdata              = axis_splitter_tdata[512+:512];
+      assign axis_s2p2p_tkeep              = axis_splitter_tkeep[64+:64];
+      assign axis_s2p2p_tlast              = axis_splitter_tlast[1+:1];
+      assign axis_s2p2p_tuser              = axis_splitter_tuser[48+:48];
+      assign axis_s2p2p_tready             = axis_splitter_tready[1+:1];
+
+      // Combiner
+      assign axis_combiner_ready[0+:1]     = axis_p2p2c_tready;
+      assign axis_combiner_tvalid[0+:1]    = axis_p2p2c_tvalid;
+      assign axis_combiner_tdata[0+:512]   = axis_p2p2c_tdata;
+      assign axis_combiner_tkeep[0+:64]    = axis_p2p2c_tkeep;
+      assign axis_combiner_tlast[0+:1]     = axis_p2p2c_tlast;
+      assign axis_combiner_tuser[0+:48]    = axis_p2p2c_tuser;
+
+      assign axis_combiner_tready[1+:1]    = axis_dp2c_tready;
+      assign axis_combiner_tvalid[1+:1]    = axis_dp2c_tvalid;
+      assign axis_combiner_tdata[512+:512] = axis_dp2c_tdata;
+      assign axis_combiner_tkeep[64+:64]   = axis_dp2c_tkeep;
+      assign axis_combiner_tlast[1+:1]     = axis_dp2c_tlast;
+      assign axis_combiner_tuser[48+:48]   = axis_dp2c_tuser;
 
       stream_switch_axis_switch_splitter_axilite splitter_inst (
         .aclk (axis_aclk),
@@ -272,10 +288,26 @@ module stream_switch_250mhz #(
         .aresetn       (axil_aresetn)
       );
 
-      // TODO(108anup)
-      // Instantiate combiner while connecting p2p, byte counters and tx adapater to combiner
       stream_switch_axis_switch_combiner_tdest combiner_inst (
+        .aclk (axis_aclk),
+        .aresetn (axis_aresetn),
 
+        .s_axis_tready (axis_combiner_tready),
+        .s_axis_tvalid (axis_combiner_tvalid),
+        .s_axis_tdata (axis_combiner_tdata),
+        .s_axis_tkeep (axis_combiner_tkeep),
+        .s_axis_tlast (axis_combiner_tlast),
+        .s_axis_tuser (axis_combiner_tuser),
+
+        .m_axis_tvalid (m_axis_adap_tx_250mhz_tvalid[i]),
+        .m_axis_tdata  (m_axis_adap_tx_250mhz_tdata[`getvec(512, i)]),
+        .m_axis_tkeep  (m_axis_adap_tx_250mhz_tkeep[`getvec(64, i)]),
+        .m_axis_tlast  (m_axis_adap_tx_250mhz_tlast[i]),
+        .m_axis_tuser  (axis_adap_tx_250mhz_tuser),
+        .m_axis_tready (m_axis_adap_tx_250mhz_tready[i]),
+
+        .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
+        .s_decode_err (combiner_decode_error)
       );
 
     end
