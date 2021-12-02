@@ -22,9 +22,9 @@
 // --------------------------------------------------
 //   BaseAddr  |  HighAddr  |  Module
 // --------------------------------------------------
-//   0x00000   |  0xBFFFF   |  Port-to-port (12 * 2^16 addresses > 19 bits)
+//   0x00000   |  0x7FFFF   |  Port-to-port (8 * 2^16 addresses = 19 bits)
 // --------------------------------------------------
-//   0xC0000   |  0xFFFFF   |  Dummy (4 * 2^16 addresses = 18 bits)
+//   0x80000   |  0xFFFFF   |  Dummy (8 * 2^16 addresses = 19 bits)
 // --------------------------------------------------
 // TODO(108anup): Verify address bits
 
@@ -91,7 +91,7 @@ module box_250mhz_address_map (
   localparam C_DUMMY_INDEX = 1;
 
   localparam C_P2P_BASE_ADDR   = 32'h0;
-  localparam C_DUMMY_BASE_ADDR = 32'hC0000;
+  localparam C_DUMMY_BASE_ADDR = 32'h80000;
 
   wire                  [31:0] axil_p2p_awaddr;
   wire                  [31:0] axil_p2p_araddr;

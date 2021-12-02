@@ -2,7 +2,7 @@
 // Address map for the box running at 250MHz (through PCI-e BAR2 4MB)
 //
 // System-level address range: 0x100000 - 0x1BFFFF
-// Box relative address range: 0x00000  - 0xBFFFF
+// Box relative address range: 0x00000  - 0x7FFFF
 //
 // --------------------------------------------------
 //   BaseAddr  |  HighAddr  |  Module
@@ -11,7 +11,7 @@
 // --------------------------------------------------
 //   0x01000   |  0x01FFF   |  Switch combiner (12 bits)
 // --------------------------------------------------
-//   0x10000   |  0xBFFFF   |  Control path (connected to p2p or dp) (20 bits)
+//   0x40000   |  0x7FFFF   |  Control path (connected to p2p or dp) (18 bits)
 // --------------------------------------------------
 // TODO(108anup): Verify address bits
 
@@ -98,7 +98,7 @@ module stream_switch_address_map (
 
   localparam C_SPLITTER_BASE_ADDR   = 32'h0;
   localparam C_COMBINER_BASE_ADDR = 32'h1000;
-  localparam C_DP_BASE_ADDR = 32'h10000;
+  localparam C_DP_BASE_ADDR = 32'h40000;
 
   wire                  [31:0] axil_splitter_awaddr;
   wire                  [31:0] axil_splitter_araddr;
