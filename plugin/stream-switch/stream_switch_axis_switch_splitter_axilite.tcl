@@ -1,4 +1,4 @@
-set axis_switch axis_switch_splitter
+set axis_switch axis_switch_splitter_axilite
 create_ip -name axis_switch -vendor xilinx.com -library ip -module_name $axis_switch
 set_property -dict [list 
     CONFIG.NUM_SI {1}
