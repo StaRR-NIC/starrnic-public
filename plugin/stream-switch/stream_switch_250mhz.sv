@@ -81,8 +81,8 @@ module stream_switch_250mhz #(
 );
 
   // Reset signals in two clock domains
-  wire axis_aresetn;
-  wire axil_aresetn;
+  wire       axis_aresetn;
+  wire       axil_aresetn;
   wire [2:0] clk_bundle;
   wire [2:0] rst_bundle;
 
@@ -102,30 +102,7 @@ module stream_switch_250mhz #(
   assign axil_aresetn = rst_bundle[0];
   assign axis_aresetn = rst_bundle[1];
 
-  axi_lite_slave #(
-    .REG_ADDR_W (12),
-    .REG_PREFIX (16'hB000)
-  ) reg_inst (
-    .s_axil_awvalid (s_axil_awvalid),
-    .s_axil_awaddr  (s_axil_awaddr),
-    .s_axil_awready (s_axil_awready),
-    .s_axil_wvalid  (s_axil_wvalid),
-    .s_axil_wdata   (s_axil_wdata),
-    .s_axil_wready  (s_axil_wready),
-    .s_axil_bvalid  (s_axil_bvalid),
-    .s_axil_bresp   (s_axil_bresp),
-    .s_axil_bready  (s_axil_bready),
-    .s_axil_arvalid (s_axil_arvalid),
-    .s_axil_araddr  (s_axil_araddr),
-    .s_axil_arready (s_axil_arready),
-    .s_axil_rvalid  (s_axil_rvalid),
-    .s_axil_rdata   (s_axil_rdata),
-    .s_axil_rresp   (s_axil_rresp),
-    .s_axil_rready  (s_axil_rready),
-
-    .aclk           (axil_aclk),
-    .aresetn        (axil_aresetn)
-  );
+  `include "stream_switch_address_map_inst.vh"
 
   generate for (genvar i = 0; i < NUM_INTF; i++) begin
     wire [47:0] axis_qdma_h2c_tuser;
@@ -149,24 +126,180 @@ module stream_switch_250mhz #(
     assign m_axis_qdma_c2h_tuser_src[`getvec(16, i)]        = axis_qdma_c2h_tuser[16+:16];
     assign m_axis_qdma_c2h_tuser_dst[`getvec(16, i)]        = 16'h1 << i;
 
-    axi_stream_pipeline tx_ppl_inst (
-      .s_axis_tvalid (s_axis_qdma_h2c_tvalid[i]),
-      .s_axis_tdata  (s_axis_qdma_h2c_tdata[`getvec(512, i)]),
-      .s_axis_tkeep  (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
-      .s_axis_tlast  (s_axis_qdma_h2c_tlast[i]),
-      .s_axis_tuser  (axis_qdma_h2c_tuser),
-      .s_axis_tready (s_axis_qdma_h2c_tready[i]),
 
-      .m_axis_tvalid (m_axis_adap_tx_250mhz_tvalid[i]),
-      .m_axis_tdata  (m_axis_adap_tx_250mhz_tdata[`getvec(512, i)]),
-      .m_axis_tkeep  (m_axis_adap_tx_250mhz_tkeep[`getvec(64, i)]),
-      .m_axis_tlast  (m_axis_adap_tx_250mhz_tlast[i]),
-      .m_axis_tuser  (axis_adap_tx_250mhz_tuser),
-      .m_axis_tready (m_axis_adap_tx_250mhz_tready[i]),
+    // NOTE: Currently only instantiating switching in INTF0. Need to create addressmaps and axilite interfaces for INTF1.
+    generate if (i == 0) begin
+      // 4 sets of wires for connecting stream switch splitter (s) and combiner (c)
+      // with the bypass path (p2p) and data path (dp).
+      localparam NUM_INF_PLACEHOLDER = 1;
 
-      .aclk          (axis_aclk),
-      .aresetn       (axil_aresetn)
-    );
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tvalid;
+      wire [512*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tdata;
+      wire  [64*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tkeep;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tlast;
+      wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tuser;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tready;
+
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tvalid;
+      wire [512*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tdata;
+      wire  [64*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tkeep;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tlast;
+      wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tuser;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tready;
+
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_p2p2c_tvalid;
+      wire [512*NUM_INF_PLACEHOLDER-1:0] axis_p2p2c_tdata;
+      wire  [64*NUM_INF_PLACEHOLDER-1:0] axis_p2p2c_tkeep;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_p2p2c_tlast;
+      wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_p2p2c_tuser;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_p2p2c_tready;
+
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tvalid;
+      wire [512*NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tdata;
+      wire  [64*NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tkeep;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tlast;
+      wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tuser;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tready;
+
+      // 2 sets for wires for merging/demerging switch interfaces.
+      localparam PORT_COUNT = 2; // number of functionalities to switch between
+
+      wire     [PORT_COUNT-1:0] axis_splitter_tvalid;
+      wire [512*PORT_COUNT-1:0] axis_splitter_tdata;
+      wire  [64*PORT_COUNT-1:0] axis_splitter_tkeep;
+      wire     [PORT_COUNT-1:0] axis_splitter_tlast;
+      wire  [48*PORT_COUNT-1:0] axis_splitter_tuser;
+      wire     [PORT_COUNT-1:0] axis_splitter_tready;
+
+      wire     [PORT_COUNT-1:0] axis_combiner_tvalid;
+      wire [512*PORT_COUNT-1:0] axis_combiner_tdata;
+      wire  [64*PORT_COUNT-1:0] axis_combiner_tkeep;
+      wire     [PORT_COUNT-1:0] axis_combiner_tlast;
+      wire  [48*PORT_COUNT-1:0] axis_combiner_tuser;
+      wire     [PORT_COUNT-1:0] axis_combiner_tready;
+
+      // merging/demerging
+      assign axis_s2p2p_tvalid = axis_splitter_tvalid[0+:1];
+      assign axis_s2p2p_tdata = axis_splitter_tdata[0+:512];
+      assign axis_s2p2p_tkeep = axis_splitter_tkeep[0+:64];
+      assign axis_s2p2p_tlast = axis_splitter_tlast[0+:1];
+      assign axis_s2p2p_tuser = axis_splitter_tuser[0+:48];
+      assign axis_s2p2p_tready = axis_splitter_tready[0+:1];
+
+      assign axis_s2p2p_tvalid = axis_splitter_tvalid[1+:1];
+      assign axis_s2p2p_tdata = axis_splitter_tdata[512+:512];
+      assign axis_s2p2p_tkeep = axis_splitter_tkeep[64+:64];
+      assign axis_s2p2p_tlast = axis_splitter_tlast[1+:1];
+      assign axis_s2p2p_tuser = axis_splitter_tuser[48+:48];
+      assign axis_s2p2p_tready = axis_splitter_tready[1+:1];
+
+      // TODO(108anup): do merging and demergeing for combiner connectors.
+
+      stream_switch_axis_switch_splitter_axilite splitter_inst (
+        .aclk (axis_aclk),
+        .s_axi_ctrl_aclk (axil_aclk),
+
+        .aresetn (axis_aresetn),
+        .s_axi_ctrl_aresetn (axil_aresetn),
+
+        .s_axi_ctrl_awvalid (axil_splitter_awvalid),
+        .s_axi_ctrl_awaddr (axil_splitter_awaddr[0+:7]),
+        .s_axi_ctrl_wvalid (axil_splitter_wvalid),
+        .s_axi_ctrl_wdata (axil_splitter_wdata[0+:32]),
+        .s_axi_ctrl_bready (axil_splitter_bready),
+        .s_axi_ctrl_arvalid (axil_splitter_arvalid),
+        .s_axi_ctrl_araddr (axil_splitter_araddr[0+:7]),
+        .s_axi_ctrl_rready (axil_splitter_rready),
+        .s_axi_ctrl_awready (axil_splitter_awready),
+        .s_axi_ctrl_wready (axil_splitter_wready),
+        .s_axi_ctrl_bvalid (axil_splitter_bvalid),
+        .s_axi_ctrl_bresp (axil_splitter_bresp[0+:2]),
+        .s_axi_ctrl_arready (axil_splitter_arready),
+        .s_axi_ctrl_rvalid (axil_splitter_rvalid),
+        .s_axi_ctrl_rdata (axil_splitter_rdata[0+:32]),
+        .s_axi_ctrl_rresp (axil_splitter_rresp[0+:2]),
+
+        .s_axis_tvalid (s_axis_qdma_h2c_tvalid[i]),
+        .s_axis_tdata  (s_axis_qdma_h2c_tdata[`getvec(512, i)]),
+        .s_axis_tkeep  (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
+        .s_axis_tlast  (s_axis_qdma_h2c_tlast[i]),
+        .s_axis_tuser  (axis_qdma_h2c_tuser),
+        .s_axis_tready (s_axis_qdma_h2c_tready[i]),
+
+        .m_axis_tready (axis_splitter_tready),
+        .m_axis_tvalid (axis_splitter_tvalid),
+        .m_axis_tdata (axis_splitter_tdata),
+        .m_axis_tkeep (axis_splitter_tkeep),
+        .m_axis_tlast (axis_splitter_tlast),
+        .m_axis_tuser (axis_splitter_tuser)
+      );
+
+      axi_stream_pipeline tx_ppl_inst (
+        .s_axis_tready (axis_s2p2p_tready),
+        .s_axis_tvalid (axis_s2p2p_tvalid),
+        .s_axis_tdata (axis_s2p2p_tdata),
+        .s_axis_tkeep (axis_s2p2p_tkeep),
+        .s_axis_tlast (axis_s2p2p_tlast),
+        .s_axis_tuser (axis_s2p2p_tuser),
+
+        .m_axis_tready (axis_p2p2c_tready),
+        .m_axis_tvalid (axis_p2p2c_tvalid),
+        .m_axis_tdata (axis_p2p2c_tdata),
+        .m_axis_tkeep (axis_p2p2c_tkeep),
+        .m_axis_tlast (axis_p2p2c_tlast),
+        .m_axis_tuser (axis_p2p2c_tuser),
+
+        .aclk          (axis_aclk),
+        .aresetn       (axil_aresetn)
+      );
+
+      axi_stream_pipeline tx_ppl_inst_placeholder_for_byte_counter (
+        .s_axis_tready (axis_s2dp_tready),
+        .s_axis_tvalid (axis_s2dp_tvalid),
+        .s_axis_tdata (axis_s2dp_tdata),
+        .s_axis_tkeep (axis_s2dp_tkeep),
+        .s_axis_tlast (axis_s2dp_tlast),
+        .s_axis_tuser (axis_s2dp_tuser),
+
+        .m_axis_tready (axis_dp2c_tready),
+        .m_axis_tvalid (axis_dp2c_tvalid),
+        .m_axis_tdata (axis_dp2c_tdata),
+        .m_axis_tkeep (axis_dp2c_tkeep),
+        .m_axis_tlast (axis_dp2c_tlast),
+        .m_axis_tuser (axis_dp2c_tuser),
+
+        .aclk          (axis_aclk),
+        .aresetn       (axil_aresetn)
+      );
+
+      // TODO(108anup)
+      // Instantiate combiner while connecting p2p, byte counters and tx adapater to combiner
+      stream_switch_axis_switch_combiner_tdest combiner_inst (
+
+      );
+
+    end
+    else begin
+      axi_stream_pipeline tx_ppl_inst (
+        .s_axis_tvalid (s_axis_qdma_h2c_tvalid[i]),
+        .s_axis_tdata  (s_axis_qdma_h2c_tdata[`getvec(512, i)]),
+        .s_axis_tkeep  (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
+        .s_axis_tlast  (s_axis_qdma_h2c_tlast[i]),
+        .s_axis_tuser  (axis_qdma_h2c_tuser),
+        .s_axis_tready (s_axis_qdma_h2c_tready[i]),
+
+        .m_axis_tvalid (m_axis_adap_tx_250mhz_tvalid[i]),
+        .m_axis_tdata  (m_axis_adap_tx_250mhz_tdata[`getvec(512, i)]),
+        .m_axis_tkeep  (m_axis_adap_tx_250mhz_tkeep[`getvec(64, i)]),
+        .m_axis_tlast  (m_axis_adap_tx_250mhz_tlast[i]),
+        .m_axis_tuser  (axis_adap_tx_250mhz_tuser),
+        .m_axis_tready (m_axis_adap_tx_250mhz_tready[i]),
+
+        .aclk          (axis_aclk),
+        .aresetn       (axil_aresetn)
+      );
+    end
+    endgenerate
 
     axi_stream_pipeline rx_ppl_inst (
       .s_axis_tvalid (s_axis_adap_rx_250mhz_tvalid[i]),
