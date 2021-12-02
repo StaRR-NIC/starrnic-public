@@ -17,7 +17,7 @@
 // *************************************************************************
 `include "open_nic_shell_macros.vh"
 `timescale 1ns/1ps
-module tx_byte_counter_250mhz #(
+module byte_counter_250mhz #(
   parameter int NUM_INTF = 1
 ) (
   input                     s_axil_awvalid,
@@ -37,23 +37,19 @@ module tx_byte_counter_250mhz #(
   output              [1:0] s_axil_rresp,
   input                     s_axil_rready,
 
-  input      [NUM_INTF-1:0] s_axis_qdma_h2c_tvalid,
-  input  [512*NUM_INTF-1:0] s_axis_qdma_h2c_tdata,
-  input   [64*NUM_INTF-1:0] s_axis_qdma_h2c_tkeep,
-  input      [NUM_INTF-1:0] s_axis_qdma_h2c_tlast,
-  input   [16*NUM_INTF-1:0] s_axis_qdma_h2c_tuser_size,
-  input   [16*NUM_INTF-1:0] s_axis_qdma_h2c_tuser_src,
-  input   [16*NUM_INTF-1:0] s_axis_qdma_h2c_tuser_dst,
-  output     [NUM_INTF-1:0] s_axis_qdma_h2c_tready,
+  input      [NUM_INTF-1:0] s_axis_tvalid,
+  input  [512*NUM_INTF-1:0] s_axis_tdata,
+  input   [64*NUM_INTF-1:0] s_axis_tkeep,
+  input      [NUM_INTF-1:0] s_axis_tlast,
+  input   [48*NUM_INTF-1:0] s_axis_tuser,
+  output     [NUM_INTF-1:0] s_axis_tready,
 
-  output     [NUM_INTF-1:0] m_axis_adap_tx_250mhz_tvalid,
-  output [512*NUM_INTF-1:0] m_axis_adap_tx_250mhz_tdata,
-  output  [64*NUM_INTF-1:0] m_axis_adap_tx_250mhz_tkeep,
-  output     [NUM_INTF-1:0] m_axis_adap_tx_250mhz_tlast,
-  output  [16*NUM_INTF-1:0] m_axis_adap_tx_250mhz_tuser_size,
-  output  [16*NUM_INTF-1:0] m_axis_adap_tx_250mhz_tuser_src,
-  output  [16*NUM_INTF-1:0] m_axis_adap_tx_250mhz_tuser_dst,
-  input      [NUM_INTF-1:0] m_axis_adap_tx_250mhz_tready,
+  output     [NUM_INTF-1:0] m_axis_tvalid,
+  output [512*NUM_INTF-1:0] m_axis_tdata,
+  output  [64*NUM_INTF-1:0] m_axis_tkeep,
+  output     [NUM_INTF-1:0] m_axis_tlast,
+  output  [48*NUM_INTF-1:0] m_axis_tuser,
+  input      [NUM_INTF-1:0] m_axis_tready,
 
   input                     axil_aclk,
   input                     axil_aresetn,
@@ -84,11 +80,11 @@ module tx_byte_counter_250mhz #(
     axi_stream_size_counter #(
       .TDATA_W (512)
     ) byte_counter_inst (
-      .p_axis_tvalid    (s_axis_qdma_h2c_tvalid[i]),
-      .p_axis_tkeep     (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
-      .p_axis_tlast     (s_axis_qdma_h2c_tlast[i]),
+      .p_axis_tvalid    (s_axis_tvalid[i]),
+      .p_axis_tkeep     (s_axis_tkeep[`getvec(64, i)]),
+      .p_axis_tlast     (s_axis_tlast[i]),
       .p_axis_tuser_mty (0),
-      .p_axis_tready    (s_axis_qdma_h2c_tready[i]),
+      .p_axis_tready    (s_axis_tready[i]),
 
       .size_valid       (size_valid[i]),
       .size             (size[`getvec(16, i)]),
@@ -101,31 +97,21 @@ module tx_byte_counter_250mhz #(
 
   // Per INTF Pipeline
   generate for (genvar i = 0; i < NUM_INTF; i++) begin
-    wire [47:0] axis_qdma_h2c_tuser;
-    wire [47:0] axis_adap_tx_250mhz_tuser;
-
-    assign axis_qdma_h2c_tuser[0+:16]                       = s_axis_qdma_h2c_tuser_size[`getvec(16, i)];
-    assign axis_qdma_h2c_tuser[16+:16]                      = s_axis_qdma_h2c_tuser_src[`getvec(16, i)];
-    assign axis_qdma_h2c_tuser[32+:16]                      = s_axis_qdma_h2c_tuser_dst[`getvec(16, i)];
-
-    assign m_axis_adap_tx_250mhz_tuser_size[`getvec(16, i)] = axis_adap_tx_250mhz_tuser[0+:16];
-    assign m_axis_adap_tx_250mhz_tuser_src[`getvec(16, i)]  = axis_adap_tx_250mhz_tuser[16+:16];
-    assign m_axis_adap_tx_250mhz_tuser_dst[`getvec(16, i)]  = 16'h1 << (6 + i);
 
     axi_stream_pipeline tx_ppl_inst (
-      .s_axis_tvalid (s_axis_qdma_h2c_tvalid[i]),
-      .s_axis_tdata  (s_axis_qdma_h2c_tdata[`getvec(512, i)]),
-      .s_axis_tkeep  (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
-      .s_axis_tlast  (s_axis_qdma_h2c_tlast[i]),
-      .s_axis_tuser  (axis_qdma_h2c_tuser),
-      .s_axis_tready (s_axis_qdma_h2c_tready[i]),
+      .s_axis_tvalid (s_axis_tvalid[i]),
+      .s_axis_tdata  (s_axis_tdata[`getvec(512, i)]),
+      .s_axis_tkeep  (s_axis_tkeep[`getvec(64, i)]),
+      .s_axis_tlast  (s_axis_tlast[i]),
+      .s_axis_tuser  (s_axis_tuser[`getvec(48, i)]),
+      .s_axis_tready (s_axis_tready[i]),
 
-      .m_axis_tvalid (m_axis_adap_tx_250mhz_tvalid[i]),
-      .m_axis_tdata  (m_axis_adap_tx_250mhz_tdata[`getvec(512, i)]),
-      .m_axis_tkeep  (m_axis_adap_tx_250mhz_tkeep[`getvec(64, i)]),
-      .m_axis_tlast  (m_axis_adap_tx_250mhz_tlast[i]),
-      .m_axis_tuser  (axis_adap_tx_250mhz_tuser),
-      .m_axis_tready (m_axis_adap_tx_250mhz_tready[i]),
+      .m_axis_tvalid (m_axis_tvalid[i]),
+      .m_axis_tdata  (m_axis_tdata[`getvec(512, i)]),
+      .m_axis_tkeep  (m_axis_tkeep[`getvec(64, i)]),
+      .m_axis_tlast  (m_axis_tlast[i]),
+      .m_axis_tuser  (m_axis_tuser[`getvec(48, i)]),
+      .m_axis_tready (m_axis_tready[i]),
 
       .aclk          (axis_aclk),
       .aresetn       (axil_aresetn)
@@ -194,4 +180,4 @@ module tx_byte_counter_250mhz #(
     end
   end
 
-endmodule: tx_byte_counter_250mhz
+endmodule: byte_counter_250mhz
