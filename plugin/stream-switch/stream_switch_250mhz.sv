@@ -99,8 +99,8 @@ module stream_switch_250mhz #(
 
   assign clk_bundle[0] = axil_aclk;
   assign clk_bundle[1] = axis_aclk;
-  assign axil_aresetn = rst_bundle[0];
-  assign axis_aresetn = rst_bundle[1];
+  assign axil_aresetn  = rst_bundle[0];
+  assign axis_aresetn  = rst_bundle[1];
 
   `include "stream_switch_address_map_inst.vh"
 
@@ -161,7 +161,7 @@ module stream_switch_250mhz #(
       wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tuser;
       wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tready;
 
-      // 2 sets for wires for merging/demerging switch interfaces.
+      // 2 sets for wires for concat/deconcat switch interfaces.
       localparam PORT_COUNT = 2; // number of functionalities to switch between
 
       wire     [PORT_COUNT-1:0] axis_splitter_tvalid;
@@ -180,7 +180,7 @@ module stream_switch_250mhz #(
 
       reg      [PORT_COUNT-1:0] combiner_decode_error;
 
-      // Merging/Demerging
+      // Concat/Deconcat
       // Splitter
       assign axis_s2p2p_tvalid             = axis_splitter_tvalid[0+:1];
       assign axis_s2p2p_tdata              = axis_splitter_tdata[0+:512];
@@ -212,58 +212,58 @@ module stream_switch_250mhz #(
       assign axis_combiner_tuser[48+:48]   = axis_dp2c_tuser;
 
       stream_switch_axis_switch_splitter_axilite splitter_inst (
-        .aclk (axis_aclk),
-        .s_axi_ctrl_aclk (axil_aclk),
+        .aclk               (axis_aclk),
+        .s_axi_ctrl_aclk    (axil_aclk),
 
-        .aresetn (axis_aresetn),
+        .aresetn            (axis_aresetn),
         .s_axi_ctrl_aresetn (axil_aresetn),
 
         .s_axi_ctrl_awvalid (axil_splitter_awvalid),
-        .s_axi_ctrl_awaddr (axil_splitter_awaddr[0+:7]),
-        .s_axi_ctrl_wvalid (axil_splitter_wvalid),
-        .s_axi_ctrl_wdata (axil_splitter_wdata[0+:32]),
-        .s_axi_ctrl_bready (axil_splitter_bready),
+        .s_axi_ctrl_awaddr  (axil_splitter_awaddr[0+:7]),
+        .s_axi_ctrl_wvalid  (axil_splitter_wvalid),
+        .s_axi_ctrl_wdata   (axil_splitter_wdata[0+:32]),
+        .s_axi_ctrl_bready  (axil_splitter_bready),
         .s_axi_ctrl_arvalid (axil_splitter_arvalid),
-        .s_axi_ctrl_araddr (axil_splitter_araddr[0+:7]),
-        .s_axi_ctrl_rready (axil_splitter_rready),
+        .s_axi_ctrl_araddr  (axil_splitter_araddr[0+:7]),
+        .s_axi_ctrl_rready  (axil_splitter_rready),
         .s_axi_ctrl_awready (axil_splitter_awready),
-        .s_axi_ctrl_wready (axil_splitter_wready),
-        .s_axi_ctrl_bvalid (axil_splitter_bvalid),
-        .s_axi_ctrl_bresp (axil_splitter_bresp[0+:2]),
+        .s_axi_ctrl_wready  (axil_splitter_wready),
+        .s_axi_ctrl_bvalid  (axil_splitter_bvalid),
+        .s_axi_ctrl_bresp   (axil_splitter_bresp[0+:2]),
         .s_axi_ctrl_arready (axil_splitter_arready),
-        .s_axi_ctrl_rvalid (axil_splitter_rvalid),
-        .s_axi_ctrl_rdata (axil_splitter_rdata[0+:32]),
-        .s_axi_ctrl_rresp (axil_splitter_rresp[0+:2]),
+        .s_axi_ctrl_rvalid  (axil_splitter_rvalid),
+        .s_axi_ctrl_rdata   (axil_splitter_rdata[0+:32]),
+        .s_axi_ctrl_rresp   (axil_splitter_rresp[0+:2]),
 
-        .s_axis_tvalid (s_axis_qdma_h2c_tvalid[i]),
-        .s_axis_tdata  (s_axis_qdma_h2c_tdata[`getvec(512, i)]),
-        .s_axis_tkeep  (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
-        .s_axis_tlast  (s_axis_qdma_h2c_tlast[i]),
-        .s_axis_tuser  (axis_qdma_h2c_tuser),
-        .s_axis_tready (s_axis_qdma_h2c_tready[i]),
+        .s_axis_tvalid      (s_axis_qdma_h2c_tvalid[i]),
+        .s_axis_tdata       (s_axis_qdma_h2c_tdata[`getvec(512, i)]),
+        .s_axis_tkeep       (s_axis_qdma_h2c_tkeep[`getvec(64, i)]),
+        .s_axis_tlast       (s_axis_qdma_h2c_tlast[i]),
+        .s_axis_tuser       (axis_qdma_h2c_tuser),
+        .s_axis_tready      (s_axis_qdma_h2c_tready[i]),
 
-        .m_axis_tready (axis_splitter_tready),
-        .m_axis_tvalid (axis_splitter_tvalid),
-        .m_axis_tdata (axis_splitter_tdata),
-        .m_axis_tkeep (axis_splitter_tkeep),
-        .m_axis_tlast (axis_splitter_tlast),
-        .m_axis_tuser (axis_splitter_tuser)
+        .m_axis_tready      (axis_splitter_tready),
+        .m_axis_tvalid      (axis_splitter_tvalid),
+        .m_axis_tdata       (axis_splitter_tdata),
+        .m_axis_tkeep       (axis_splitter_tkeep),
+        .m_axis_tlast       (axis_splitter_tlast),
+        .m_axis_tuser       (axis_splitter_tuser)
       );
 
       axi_stream_pipeline tx_ppl_inst (
         .s_axis_tready (axis_s2p2p_tready),
         .s_axis_tvalid (axis_s2p2p_tvalid),
-        .s_axis_tdata (axis_s2p2p_tdata),
-        .s_axis_tkeep (axis_s2p2p_tkeep),
-        .s_axis_tlast (axis_s2p2p_tlast),
-        .s_axis_tuser (axis_s2p2p_tuser),
+        .s_axis_tdata  (axis_s2p2p_tdata),
+        .s_axis_tkeep  (axis_s2p2p_tkeep),
+        .s_axis_tlast  (axis_s2p2p_tlast),
+        .s_axis_tuser  (axis_s2p2p_tuser),
 
         .m_axis_tready (axis_p2p2c_tready),
         .m_axis_tvalid (axis_p2p2c_tvalid),
-        .m_axis_tdata (axis_p2p2c_tdata),
-        .m_axis_tkeep (axis_p2p2c_tkeep),
-        .m_axis_tlast (axis_p2p2c_tlast),
-        .m_axis_tuser (axis_p2p2c_tuser),
+        .m_axis_tdata  (axis_p2p2c_tdata),
+        .m_axis_tkeep  (axis_p2p2c_tkeep),
+        .m_axis_tlast  (axis_p2p2c_tlast),
+        .m_axis_tuser  (axis_p2p2c_tuser),
 
         .aclk          (axis_aclk),
         .aresetn       (axil_aresetn)
@@ -272,42 +272,42 @@ module stream_switch_250mhz #(
       axi_stream_pipeline tx_ppl_inst_placeholder_for_byte_counter (
         .s_axis_tready (axis_s2dp_tready),
         .s_axis_tvalid (axis_s2dp_tvalid),
-        .s_axis_tdata (axis_s2dp_tdata),
-        .s_axis_tkeep (axis_s2dp_tkeep),
-        .s_axis_tlast (axis_s2dp_tlast),
-        .s_axis_tuser (axis_s2dp_tuser),
+        .s_axis_tdata  (axis_s2dp_tdata),
+        .s_axis_tkeep  (axis_s2dp_tkeep),
+        .s_axis_tlast  (axis_s2dp_tlast),
+        .s_axis_tuser  (axis_s2dp_tuser),
 
         .m_axis_tready (axis_dp2c_tready),
         .m_axis_tvalid (axis_dp2c_tvalid),
-        .m_axis_tdata (axis_dp2c_tdata),
-        .m_axis_tkeep (axis_dp2c_tkeep),
-        .m_axis_tlast (axis_dp2c_tlast),
-        .m_axis_tuser (axis_dp2c_tuser),
+        .m_axis_tdata  (axis_dp2c_tdata),
+        .m_axis_tkeep  (axis_dp2c_tkeep),
+        .m_axis_tlast  (axis_dp2c_tlast),
+        .m_axis_tuser  (axis_dp2c_tuser),
 
         .aclk          (axis_aclk),
         .aresetn       (axil_aresetn)
       );
 
       stream_switch_axis_switch_combiner_tdest combiner_inst (
-        .aclk (axis_aclk),
-        .aresetn (axis_aresetn),
+        .aclk           (axis_aclk),
+        .aresetn        (axis_aresetn),
 
-        .s_axis_tready (axis_combiner_tready),
-        .s_axis_tvalid (axis_combiner_tvalid),
-        .s_axis_tdata (axis_combiner_tdata),
-        .s_axis_tkeep (axis_combiner_tkeep),
-        .s_axis_tlast (axis_combiner_tlast),
-        .s_axis_tuser (axis_combiner_tuser),
+        .s_axis_tready  (axis_combiner_tready),
+        .s_axis_tvalid  (axis_combiner_tvalid),
+        .s_axis_tdata   (axis_combiner_tdata),
+        .s_axis_tkeep   (axis_combiner_tkeep),
+        .s_axis_tlast   (axis_combiner_tlast),
+        .s_axis_tuser   (axis_combiner_tuser),
 
-        .m_axis_tvalid (m_axis_adap_tx_250mhz_tvalid[i]),
-        .m_axis_tdata  (m_axis_adap_tx_250mhz_tdata[`getvec(512, i)]),
-        .m_axis_tkeep  (m_axis_adap_tx_250mhz_tkeep[`getvec(64, i)]),
-        .m_axis_tlast  (m_axis_adap_tx_250mhz_tlast[i]),
-        .m_axis_tuser  (axis_adap_tx_250mhz_tuser),
-        .m_axis_tready (m_axis_adap_tx_250mhz_tready[i]),
+        .m_axis_tvalid  (m_axis_adap_tx_250mhz_tvalid[i]),
+        .m_axis_tdata   (m_axis_adap_tx_250mhz_tdata[`getvec(512, i)]),
+        .m_axis_tkeep   (m_axis_adap_tx_250mhz_tkeep[`getvec(64, i)]),
+        .m_axis_tlast   (m_axis_adap_tx_250mhz_tlast[i]),
+        .m_axis_tuser   (axis_adap_tx_250mhz_tuser),
+        .m_axis_tready  (m_axis_adap_tx_250mhz_tready[i]),
 
         .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
-        .s_decode_err (combiner_decode_error)
+        .s_decode_err   (combiner_decode_error)
       );
 
     end
