@@ -128,17 +128,10 @@ module stream_switch_250mhz #(
 
 
     // NOTE: Currently only instantiating switching in INTF0. Need to create addressmaps and axilite interfaces for INTF1.
-    generate if (i == 0) begin
+    if (i == 0) begin
       // 4 sets of wires for connecting stream switch splitter (s) and combiner (c)
       // with the bypass path (p2p) and data path (dp).
       localparam NUM_INF_PLACEHOLDER = 1;
-
-      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tvalid;
-      wire [512*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tdata;
-      wire  [64*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tkeep;
-      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tlast;
-      wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tuser;
-      wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tready;
 
       wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tvalid;
       wire [512*NUM_INF_PLACEHOLDER-1:0] axis_s2p2p_tdata;
@@ -160,6 +153,13 @@ module stream_switch_250mhz #(
       wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tlast;
       wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tuser;
       wire     [NUM_INF_PLACEHOLDER-1:0] axis_s2dp_tready;
+
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_dp2c_tvalid;
+      wire [512*NUM_INF_PLACEHOLDER-1:0] axis_dp2c_tdata;
+      wire  [64*NUM_INF_PLACEHOLDER-1:0] axis_dp2c_tkeep;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_dp2c_tlast;
+      wire  [48*NUM_INF_PLACEHOLDER-1:0] axis_dp2c_tuser;
+      wire     [NUM_INF_PLACEHOLDER-1:0] axis_dp2c_tready;
 
       // 2 sets for wires for concat/deconcat switch interfaces.
       localparam PORT_COUNT = 2; // number of functionalities to switch between
@@ -189,15 +189,15 @@ module stream_switch_250mhz #(
       assign axis_s2p2p_tlast              = axis_splitter_tlast[0+:1];
       assign axis_s2p2p_tuser              = axis_splitter_tuser[0+:48];
 
-      assign axis_s2p2p_tready             = axis_splitter_tready[1+:1];
-      assign axis_s2p2p_tvalid             = axis_splitter_tvalid[1+:1];
-      assign axis_s2p2p_tdata              = axis_splitter_tdata[512+:512];
-      assign axis_s2p2p_tkeep              = axis_splitter_tkeep[64+:64];
-      assign axis_s2p2p_tlast              = axis_splitter_tlast[1+:1];
-      assign axis_s2p2p_tuser              = axis_splitter_tuser[48+:48];
+      assign axis_s2dp_tready              = axis_splitter_tready[1+:1];
+      assign axis_s2dp_tvalid              = axis_splitter_tvalid[1+:1];
+      assign axis_s2dp_tdata               = axis_splitter_tdata[512+:512];
+      assign axis_s2dp_tkeep               = axis_splitter_tkeep[64+:64];
+      assign axis_s2dp_tlast               = axis_splitter_tlast[1+:1];
+      assign axis_s2dp_tuser               = axis_splitter_tuser[48+:48];
 
       // Combiner
-      assign axis_combiner_ready[0+:1]     = axis_p2p2c_tready;
+      assign axis_combiner_tready[0+:1]    = axis_p2p2c_tready;
       assign axis_combiner_tvalid[0+:1]    = axis_p2p2c_tvalid;
       assign axis_combiner_tdata[0+:512]   = axis_p2p2c_tdata;
       assign axis_combiner_tkeep[0+:64]    = axis_p2p2c_tkeep;
@@ -211,7 +211,7 @@ module stream_switch_250mhz #(
       assign axis_combiner_tlast[1+:1]     = axis_dp2c_tlast;
       assign axis_combiner_tuser[48+:48]   = axis_dp2c_tuser;
 
-      stream_switch_axis_switch_splitter_axilite splitter_inst (
+      axis_switch_splitter_axilite splitter_inst (
         .aclk               (axis_aclk),
         .s_axi_ctrl_aclk    (axil_aclk),
 
@@ -310,26 +310,7 @@ module stream_switch_250mhz #(
         .m_axis_tready  (axis_dp2c_tready)
       );
 
-      axi_stream_pipeline tx_ppl_inst_placeholder_for_byte_counter (
-        .s_axis_tready (axis_s2dp_tready),
-        .s_axis_tvalid (axis_s2dp_tvalid),
-        .s_axis_tdata  (axis_s2dp_tdata),
-        .s_axis_tkeep  (axis_s2dp_tkeep),
-        .s_axis_tlast  (axis_s2dp_tlast),
-        .s_axis_tuser  (axis_s2dp_tuser),
-
-        .m_axis_tready (axis_dp2c_tready),
-        .m_axis_tvalid (axis_dp2c_tvalid),
-        .m_axis_tdata  (axis_dp2c_tdata),
-        .m_axis_tkeep  (axis_dp2c_tkeep),
-        .m_axis_tlast  (axis_dp2c_tlast),
-        .m_axis_tuser  (axis_dp2c_tuser),
-
-        .aclk          (axis_aclk),
-        .aresetn       (axil_aresetn)
-      );
-
-      stream_switch_axis_switch_combiner_tdest combiner_inst (
+      axis_switch_combiner_tdest combiner_inst (
         .aclk           (axis_aclk),
         .aresetn        (axis_aresetn),
 
@@ -398,7 +379,6 @@ module stream_switch_250mhz #(
         .aresetn       (axil_aresetn)
       );
     end
-    endgenerate
 
     axi_stream_pipeline rx_ppl_inst (
       .s_axis_tvalid (s_axis_adap_rx_250mhz_tvalid[i]),

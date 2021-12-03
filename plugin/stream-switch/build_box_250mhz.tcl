@@ -22,7 +22,7 @@ read_verilog -quiet stream_switch_address_map_inst.vh
 read_verilog -quiet stream_switch_address_map.v
 
 # source stream_switch_axis_switch_combiner_axilite.tcl
-source stream_switch_axis_switch_combiner_tdest.tcl
-source stream_switch_axis_switch_splitter_axilite.tcl
+source axis_switch_combiner_tdest.tcl
+source axis_switch_splitter_axilite.tcl
 
 read_verilog -quiet -sv stream_switch_250mhz.sv
