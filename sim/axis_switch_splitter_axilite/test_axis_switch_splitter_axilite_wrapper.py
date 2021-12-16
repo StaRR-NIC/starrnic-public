@@ -6,7 +6,7 @@ from cocotb.clock import Clock
 from cocotb.regression import TestFactory
 from cocotb.triggers import RisingEdge
 from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
-                           AxiStreamFrame, AxiStreamSink, AxiStreamSource)
+                           AxiStreamSink, AxiStreamSource)
 
 
 class TB:
@@ -17,9 +17,21 @@ class TB:
         self.log.setLevel(logging.DEBUG)
         self.log.info("Got DUT: {}".format(dut))
 
-        cocotb.fork(Clock(dut.axil_aclk, 2, units="ns").start())
+        cocotb.fork(Clock(dut.aclk, 2, units="ns").start())
+        cocotb.fork(Clock(dut.s_axi_ctrl_aclk, 4, units="ns").start())
 
-        self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "s_axil"), dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
+        self.source = AxiStreamSource(
+            AxiStreamBus.from_prefix(dut, "s_axis"),
+            dut.aclk, dut.aresetn, reset_active_level=False)
+        self.sink1 = AxiStreamSink(
+            AxiStreamBus.from_prefix(dut, "m_axis1"),
+            dut.aclk, dut.aresetn, reset_active_level=False)
+        self.sink2 = AxiStreamSink(
+            AxiStreamBus.from_prefix(dut, "m_axis2"),
+            dut.aclk, dut.aresetn, reset_active_level=False)
+        self.control = AxiLiteMaster(
+            AxiLiteBus.from_prefix(dut, "s_axil"),
+            dut.s_axi_ctrl_aclk, dut.s_axi_ctrl_aresetn, reset_active_level=False)
 
     def set_idle_generator(self, generator=None):
         if generator:
@@ -27,21 +39,26 @@ class TB:
             self.control.write_if.w_channel.set_pause_generator(generator())
             self.control.read_if.ar_channel.set_pause_generator(generator())
 
+            self.source.set_pause_generator(generator())
+
     def set_backpressure_generator(self, generator=None):
         if generator:
             self.control.write_if.b_channel.set_pause_generator(generator())
             self.control.read_if.r_channel.set_pause_generator(generator())
 
+            self.sink1.set_pause_generator(generator())
+            self.sink2.set_pause_generator(generator())
+
     async def reset(self):
-        self.dut.axil_aresetn.setimmediatevalue(1)
-        await RisingEdge(self.dut.axil_aclk)
-        await RisingEdge(self.dut.axil_aclk)
-        self.dut.axil_aresetn.value = 0
-        await RisingEdge(self.dut.axil_aclk)
-        await RisingEdge(self.dut.axil_aclk)
-        self.dut.axil_aresetn.value = 1
-        await RisingEdge(self.dut.axil_aclk)
-        await RisingEdge(self.dut.axil_aclk)
+        self.dut.s_axi_ctrl_aresetn.setimmediatevalue(1)
+        await RisingEdge(self.dut.s_axi_ctrl_aclk)
+        await RisingEdge(self.dut.s_axi_ctrl_aclk)
+        self.dut.s_axi_ctrl_aresetn.value = 0
+        await RisingEdge(self.dut.s_axi_ctrl_aclk)
+        await RisingEdge(self.dut.s_axi_ctrl_aclk)
+        self.dut.s_axi_ctrl_aresetn.value = 1
+        await RisingEdge(self.dut.s_axi_ctrl_aclk)
+        await RisingEdge(self.dut.s_axi_ctrl_aclk)
 
 async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
@@ -61,7 +78,6 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     await RisingEdge(dut.axil_aclk)
     await RisingEdge(dut.axil_aclk)
-
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])

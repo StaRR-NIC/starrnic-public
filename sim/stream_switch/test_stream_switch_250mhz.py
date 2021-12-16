@@ -25,17 +25,6 @@ class TB:
         self.sink_tx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_adap_tx_250mhz"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
         self.sink_rx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_qdma_c2h"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
         self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "axil_splitter_"), dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
-        """ try:
-            self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "s_axil"), dut.axil_aclk, dut.axil_aresetn)
-        except Exception:
-            import sys
-            import traceback
-
-            extype, value, tb = sys.exc_info()
-            traceback.print_exc()
-            from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
-            # rpdb.post_mortem(tb)
-            rpdb.set_trace() """
 
     def set_idle_generator(self, generator=None):
         if generator:
