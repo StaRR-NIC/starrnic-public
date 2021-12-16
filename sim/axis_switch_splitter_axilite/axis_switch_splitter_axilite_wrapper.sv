@@ -74,7 +74,7 @@ axis_switch_splitter_axilite splitter_inst (
   .aresetn            (aresetn),
 
   .s_axi_ctrl_aclk    (s_axi_ctrl_aclk),
-  .s_axi_ctrl_aresetn (s_axi_aresetn),
+  .s_axi_ctrl_aresetn (s_axi_ctrl_aresetn),
   .s_axi_ctrl_awvalid (s_axi_ctrl_awvalid),
   .s_axi_ctrl_awaddr  (s_axi_ctrl_awaddr[0+:7]),
   .s_axi_ctrl_wvalid  (s_axi_ctrl_wvalid),

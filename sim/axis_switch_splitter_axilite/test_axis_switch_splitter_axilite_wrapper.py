@@ -6,7 +6,7 @@ from cocotb.clock import Clock
 from cocotb.regression import TestFactory
 from cocotb.triggers import RisingEdge
 from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
-                           AxiStreamSink, AxiStreamSource)
+                           AxiStreamSink, AxiStreamSource, AxiStreamFrame)
 
 
 class TB:
@@ -30,7 +30,7 @@ class TB:
             AxiStreamBus.from_prefix(dut, "m_axis2"),
             dut.aclk, dut.aresetn, reset_active_level=False)
         self.control = AxiLiteMaster(
-            AxiLiteBus.from_prefix(dut, "s_axil"),
+            AxiLiteBus.from_prefix(dut, "s_axi_ctrl"),
             dut.s_axi_ctrl_aclk, dut.s_axi_ctrl_aresetn, reset_active_level=False)
 
     def set_idle_generator(self, generator=None):
@@ -50,7 +50,18 @@ class TB:
             self.sink2.set_pause_generator(generator())
 
     async def reset(self):
+        self.dut.aresetn.setimmediatevalue(1)
         self.dut.s_axi_ctrl_aresetn.setimmediatevalue(1)
+
+        await RisingEdge(self.dut.aclk)
+        await RisingEdge(self.dut.aclk)
+        self.dut.aresetn.value = 0
+        await RisingEdge(self.dut.aclk)
+        await RisingEdge(self.dut.aclk)
+        self.dut.aresetn.value = 1
+        await RisingEdge(self.dut.aclk)
+        await RisingEdge(self.dut.aclk)
+
         await RisingEdge(self.dut.s_axi_ctrl_aclk)
         await RisingEdge(self.dut.s_axi_ctrl_aclk)
         self.dut.s_axi_ctrl_aresetn.value = 0
@@ -71,13 +82,52 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     # from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
     # remote_pdb.set_trace()
-    base = 0x1000
+    base = 0x0000
     control_reg = await tb.control.read(0x0000 + base, 4)
-    mi_mux = await tb.control.read(0x0040 + base, 4)
-    print("Read splitter regs: Control {}, MI_MUX {}".format(control_reg.data, mi_mux.data))
+    mi_mux1 = await tb.control.read(0x0040 + base, 4)
+    mi_mux2 = await tb.control.read(0x0044 + base, 4)
+    dut.log.info(
+        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
+        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
 
-    await RisingEdge(dut.axil_aclk)
-    await RisingEdge(dut.axil_aclk)
+    # configure master1 to get traffic from slave
+    tb.log.info("Configuring master1")
+    await tb.control.write(0x0040 + base, b'\x00')
+    await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
+    await tb.control.read(0x0040 + base, 4)  # check configuration
+
+    tb.log.info("Testing master1")
+    test_frames = []
+    test_frame = AxiStreamFrame(b'101010101')
+    await tb.source.send(test_frame)
+    test_frames.append(test_frame)
+    for test_frame in test_frames:
+        tb.log.info("Trying to recv frames")
+        rx_frame = await tb.sink1.recv()
+        assert rx_frame.tdata == test_frame.tdata
+
+    assert tb.sink1.empty()
+    assert tb.sink2.empty()
+
+    # configure master2 to get traffic from slave
+    tb.log.info("Configuring master2")
+    await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80') # disable master1
+    await tb.control.write(0x0044 + base, b'\x00')
+    await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
+    await tb.control.read(0x0040 + base, 4)  # check configuration
+
+    tb.log.info("Testing master2")
+    test_frames = []
+    test_frame = AxiStreamFrame(b'1111111111')
+    await tb.source.send(test_frame)
+    test_frames.append(test_frame)
+    for test_frame in test_frames:
+        tb.log.info("Trying to recv frames")
+        rx_frame = await tb.sink2.recv()
+        assert rx_frame.tdata == test_frame.tdata
+
+    assert tb.sink1.empty()
+    assert tb.sink2.empty()
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])

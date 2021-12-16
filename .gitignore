@@ -8,3 +8,5 @@ vivado*.str
 
 build
 sim_build
+
+.vscode
