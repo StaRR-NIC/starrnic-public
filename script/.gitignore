@@ -1,0 +1,7 @@
+modelsim.ini
+.cxl.ip/
+.cxl.modelsim.version
+compile_simlib.log
+compile_simlib.log.bak
+modelsim.ini.bak
+*~

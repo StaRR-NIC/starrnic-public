@@ -406,7 +406,7 @@ if {$sim} {
             -dir ${modelsim_lib_path}
     }
 
-    # Export simluation
+    # Export simulation
     set_property target_simulator ModelSim [current_project]
     set_property top $sim_params(-sim_top) [get_filesets sim_1]
     set_property top_lib xil_defaultlib [get_filesets sim_1]
