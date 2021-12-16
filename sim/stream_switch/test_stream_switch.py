@@ -15,23 +15,35 @@ class TB:
 
         self.log = logging.getLogger("cocotb.tb")
         self.log.setLevel(logging.DEBUG)
+        self.log.info("Got DUT: {}".format(dut))
 
         cocotb.fork(Clock(dut.axis_aclk, 2, units="ns").start())
         cocotb.fork(Clock(dut.axil_aclk, 4, units="ns").start())
 
         self.source_tx = AxiStreamSource(AxiStreamBus.from_prefix(dut, "s_axis_qdma_h2c"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.sink_tx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_qdma_c2h"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
         self.source_rx = AxiStreamSource(AxiStreamBus.from_prefix(dut, "s_axis_adap_rx_250mhz"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
         self.sink_tx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_adap_tx_250mhz"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "s_axil"), dut.axil_aclk, dut.axil_aresetn)
+        self.sink_rx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_qdma_c2h"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+        self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "axil_splitter_"), dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
+        """ try:
+            self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "s_axil"), dut.axil_aclk, dut.axil_aresetn)
+        except Exception:
+            import sys
+            import traceback
+
+            extype, value, tb = sys.exc_info()
+            traceback.print_exc()
+            from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
+            # rpdb.post_mortem(tb)
+            rpdb.set_trace() """
 
     def set_idle_generator(self, generator=None):
         if generator:
-            self.source.set_pause_generator(generator())
+            self.source_tx.set_pause_generator(generator())
 
     def set_backpressure_generator(self, generator=None):
         if generator:
-            self.sink.set_pause_generator(generator())
+            self.sink_tx.set_pause_generator(generator())
 
     async def reset(self):
         self.dut.mod_rstn.setimmediatevalue(1)
@@ -43,6 +55,8 @@ class TB:
         await RisingEdge(self.dut.axil_aclk)
         self.dut.mod_rstn.value = 1
         await RisingEdge(self.dut.mod_rst_done)
+        # await RisingEdge(self.dut.axil_aclk)
+        # await RisingEdge(self.dut.axil_aclk)
 
 async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
@@ -52,6 +66,14 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     tb.set_idle_generator(idle_inserter)
     tb.set_backpressure_generator(backpressure_inserter)
+
+    # from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
+    # remote_pdb.set_trace()
+    base = 0x1000
+    control_reg = tb.control.read(0x0000 + base)
+    mi_mux = tb.control.read(0x0040 + base)
+    print("Read splitter regs: Control {}, MI_MUX {}".format(control_reg, mi_mux))
+    await tb.control.write(base + 0x0040, b'\x00')
 
     test_frames = []
 

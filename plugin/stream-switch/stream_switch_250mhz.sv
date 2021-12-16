@@ -25,6 +25,7 @@ module stream_switch_250mhz #(
   output                    s_axil_awready,
   input                     s_axil_wvalid,
   input              [31:0] s_axil_wdata,
+  input               [3:0] s_axil_wstrb, // Dummy, only used for sim.
   output                    s_axil_wready,
   output                    s_axil_bvalid,
   output              [1:0] s_axil_bresp,
@@ -83,8 +84,8 @@ module stream_switch_250mhz #(
   // Reset signals in two clock domains
   wire       axis_aresetn;
   wire       axil_aresetn;
-  wire [2:0] clk_bundle;
-  wire [2:0] rst_bundle;
+  wire [1:0] clk_bundle;
+  wire [1:0] rst_bundle;
 
   // Two reset signals for the 2 clocks (0: AXI-Lite 125MHz and 1: AXI-Stream 250MHz)
   generic_reset #(

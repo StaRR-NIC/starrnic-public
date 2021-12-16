@@ -93,6 +93,7 @@ array set build_options {
     -impl        0
     -post_impl   0
     -user_plugin ""
+    -sim  0
 }
 set build_options(-user_plugin) ${plugin_dir}/p2p
 
@@ -105,6 +106,13 @@ array set design_params {
     -num_queue        512
     -num_cmac_port    1
 }
+
+array set sim_params {
+    -sim_path         ""
+    -sim_lib_path     ""
+    -sim_top          ""
+}
+
 set design_params(-build_timestamp) [clock format [clock seconds] -format %m%d%H%M]
 
 # Expect arguments in the form of `-argument value`
@@ -117,6 +125,9 @@ for {set i 0} {$i < $argc} {incr i 2} {
     } elseif {[info exists design_params($arg)]} {
         set design_params($arg) $val
         puts "Set design parameter $arg to $val"
+    } elseif {[info exists sim_params($arg)]} {
+        set sim_params($arg) $val
+        puts "Set sim parameter $arg to $val"
     } else {
         puts "Skip unknown argument $arg and its value $val"
     }
@@ -374,6 +385,41 @@ set_property top $top [get_property srcset [current_run]]
 read_xdc -unmanaged ${constr_dir}/${board}/pins.xdc
 read_xdc -unmanaged ${constr_dir}/${board}/timing.xdc
 read_xdc ${constr_dir}/${board}/general.xdc
+
+if {$sim} {
+    # Generate simulation libraries
+    # compile_simlib -simulator modelsim \
+    #   -simulator_exec_path {/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64} \
+    #   -family all -language all -library all \
+    #   -dir {/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib/modelsim}
+    # set ${sim_params(-sim_lib_path)} "/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2"
+    # set ${sim_params(-sim_path)} "/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64"
+
+    set sim_lib_path ${sim_params(-sim_lib_path)}/modelsim
+    if {[file exists ${sim_lib_path}]} {
+        puts "Skipping compilation of simulation libraries as directory ${sim_lib_path} exists."
+    } else {
+        puts "Compiling simulation libraries in directory ${sim_lib_path}."
+        compile_simlib -simulator modelsim -simulator_exec_path ${sim_params(-sim_path)} \
+            -family all -language all -library all \
+            -dir ${sim_lib_path}
+    }
+
+    # Export simluation
+    set_property target_simulator ModelSim [current_project]
+    set_property top $sim_params(-sim_top) [get_filesets sim_1]
+    set_property top_lib xil_defaultlib [get_filesets sim_1]
+    set_property compxlib.modelsim_compiled_library_dir ${sim_lib_path} [current_project]
+    launch_simulation -scripts_only
+
+    # set sim_dir [file normalize ${root_dir}/sim_build/${build_name}/behav]
+    # export_simulation -lib_map_path ${sim_lib_path} -absolute_path \
+    #     -directory ${sim_dir} \
+    #     -simulator modelsim  \
+    #     -ip_user_files_dir ${top_build_dir}/${top}.ip_user_files \
+    #     -ipstatic_source_dir ${${top_build_dir}}/${top}.ip_user_files/ipstatic \
+    #     -use_ip_compiled_libs
+}
 
 # Implement design
 if {$impl} {

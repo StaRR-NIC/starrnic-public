@@ -7,3 +7,4 @@ vivado*.str
 .Xil
 
 build
+sim_build
