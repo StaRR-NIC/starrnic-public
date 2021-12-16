@@ -392,28 +392,29 @@ if {$sim} {
     #   -simulator_exec_path {/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64} \
     #   -family all -language all -library all \
     #   -dir {/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib/modelsim}
-    # set ${sim_params(-sim_lib_path)} "/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2"
+    # set ${sim_params(-sim_lib_path)} "/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib"
     # set ${sim_params(-sim_path)} "/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64"
 
-    set sim_lib_path ${sim_params(-sim_lib_path)}/modelsim
-    if {[file exists ${sim_lib_path}]} {
-        puts "Skipping compilation of simulation libraries as directory ${sim_lib_path} exists."
+    # set sim_lib_path ${sim_params(-sim_lib_path)}
+    set modelsim_lib_path ${sim_params(-sim_lib_path)}/modelsim
+    if {[file exists ${modelsim_lib_path}]} {
+        puts "Skipping compilation of simulation libraries as directory ${modelsim_lib_path} exists."
     } else {
-        puts "Compiling simulation libraries in directory ${sim_lib_path}."
+        puts "Compiling simulation libraries in directory ${modelsim_lib_path}."
         compile_simlib -simulator modelsim -simulator_exec_path ${sim_params(-sim_path)} \
             -family all -language all -library all \
-            -dir ${sim_lib_path}
+            -dir ${modelsim_lib_path}
     }
 
     # Export simluation
     set_property target_simulator ModelSim [current_project]
     set_property top $sim_params(-sim_top) [get_filesets sim_1]
     set_property top_lib xil_defaultlib [get_filesets sim_1]
-    set_property compxlib.modelsim_compiled_library_dir ${sim_lib_path} [current_project]
+    set_property compxlib.modelsim_compiled_library_dir ${modelsim_lib_path} [current_project]
     launch_simulation -scripts_only
 
     # set sim_dir [file normalize ${root_dir}/sim_build/${build_name}/behav]
-    # export_simulation -lib_map_path ${sim_lib_path} -absolute_path \
+    # export_simulation -lib_map_path ${modelsim_lib_path} -absolute_path \
     #     -directory ${sim_dir} \
     #     -simulator modelsim  \
     #     -ip_user_files_dir ${top_build_dir}/${top}.ip_user_files \
