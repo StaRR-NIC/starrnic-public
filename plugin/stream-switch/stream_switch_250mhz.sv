@@ -183,14 +183,14 @@ module stream_switch_250mhz #(
 
       // Concat/Deconcat
       // Splitter
-      assign axis_s2p2p_tready             = axis_splitter_tready[0+:1];
+      assign axis_splitter_tready[0+:1]    = axis_s2p2p_tready;
       assign axis_s2p2p_tvalid             = axis_splitter_tvalid[0+:1];
       assign axis_s2p2p_tdata              = axis_splitter_tdata[0+:512];
       assign axis_s2p2p_tkeep              = axis_splitter_tkeep[0+:64];
       assign axis_s2p2p_tlast              = axis_splitter_tlast[0+:1];
       assign axis_s2p2p_tuser              = axis_splitter_tuser[0+:48];
 
-      assign axis_s2dp_tready              = axis_splitter_tready[1+:1];
+      assign axis_splitter_tready[1+:1]    = axis_s2dp_tready;
       assign axis_s2dp_tvalid              = axis_splitter_tvalid[1+:1];
       assign axis_s2dp_tdata               = axis_splitter_tdata[512+:512];
       assign axis_s2dp_tkeep               = axis_splitter_tkeep[64+:64];
@@ -198,14 +198,14 @@ module stream_switch_250mhz #(
       assign axis_s2dp_tuser               = axis_splitter_tuser[48+:48];
 
       // Combiner
-      assign axis_combiner_tready[0+:1]    = axis_p2p2c_tready;
+      assign axis_p2p2c_tready             = axis_combiner_tready[0+:1];
       assign axis_combiner_tvalid[0+:1]    = axis_p2p2c_tvalid;
       assign axis_combiner_tdata[0+:512]   = axis_p2p2c_tdata;
       assign axis_combiner_tkeep[0+:64]    = axis_p2p2c_tkeep;
       assign axis_combiner_tlast[0+:1]     = axis_p2p2c_tlast;
       assign axis_combiner_tuser[0+:48]    = axis_p2p2c_tuser;
 
-      assign axis_combiner_tready[1+:1]    = axis_dp2c_tready;
+      assign axis_dp2c_tready              = axis_combiner_tready[1+:1];
       assign axis_combiner_tvalid[1+:1]    = axis_dp2c_tvalid;
       assign axis_combiner_tdata[512+:512] = axis_dp2c_tdata;
       assign axis_combiner_tkeep[64+:64]   = axis_dp2c_tkeep;
@@ -311,6 +311,51 @@ module stream_switch_250mhz #(
         .m_axis_tready  (axis_dp2c_tready)
       );
 
+      // // For debugging bypass bytecounter also including the control interface.
+      // axi_lite_slave #(
+      //   .REG_ADDR_W (12),
+      //   .REG_PREFIX (16'hB000)
+      // ) dp_axilite_not_in_use (
+      //   .s_axil_awvalid (axil_dp_awvalid),
+      //   .s_axil_awaddr  (axil_dp_awaddr),
+      //   .s_axil_awready (axil_dp_awready),
+      //   .s_axil_wvalid  (axil_dp_wvalid),
+      //   .s_axil_wdata   (axil_dp_wdata),
+      //   .s_axil_wready  (axil_dp_wready),
+      //   .s_axil_bvalid  (axil_dp_bvalid),
+      //   .s_axil_bresp   (axil_dp_bresp),
+      //   .s_axil_bready  (axil_dp_bready),
+      //   .s_axil_arvalid (axil_dp_arvalid),
+      //   .s_axil_araddr  (axil_dp_araddr),
+      //   .s_axil_arready (axil_dp_arready),
+      //   .s_axil_rvalid  (axil_dp_rvalid),
+      //   .s_axil_rdata   (axil_dp_rdata),
+      //   .s_axil_rresp   (axil_dp_rresp),
+      //   .s_axil_rready  (axil_dp_rready),
+
+      //   .aclk           (axil_aclk),
+      //   .aresetn        (axil_aresetn)
+      // );
+
+      // axi_stream_pipeline tx_ppl_inst_dp (
+      //   .s_axis_tvalid  (axis_s2dp_tvalid),
+      //   .s_axis_tdata   (axis_s2dp_tdata),
+      //   .s_axis_tkeep   (axis_s2dp_tkeep),
+      //   .s_axis_tlast   (axis_s2dp_tlast),
+      //   .s_axis_tuser   (axis_s2dp_tuser),
+      //   .s_axis_tready  (axis_s2dp_tready),
+
+      //   .m_axis_tvalid  (axis_dp2c_tvalid),
+      //   .m_axis_tdata   (axis_dp2c_tdata),
+      //   .m_axis_tkeep   (axis_dp2c_tkeep),
+      //   .m_axis_tlast   (axis_dp2c_tlast),
+      //   .m_axis_tuser   (axis_dp2c_tuser),
+      //   .m_axis_tready  (axis_dp2c_tready),
+
+      //   .aclk          (axis_aclk),
+      //   .aresetn       (axil_aresetn)
+      // );
+
       axis_switch_combiner_tdest combiner_inst (
         .aclk           (axis_aclk),
         .aresetn        (axis_aresetn),
@@ -335,7 +380,7 @@ module stream_switch_250mhz #(
 
       axi_lite_slave #(
         .REG_ADDR_W (12),
-        .REG_PREFIX (16'hB000)
+        .REG_PREFIX (16'hC000)
       ) combiner_axilite_not_in_use (
         .s_axil_awvalid (axil_combiner_awvalid),
         .s_axil_awaddr  (axil_combiner_awaddr),
