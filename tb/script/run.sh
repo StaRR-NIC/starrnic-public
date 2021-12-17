@@ -7,8 +7,16 @@ export LIBPYTHON_LOC=$(cocotb-config --libpython)
 export MODULE=test_${DUT}
 export TOP_LEVEL=${DUT}
 
+if [[ $DEBUG == "1" ]]; then
+    export COCOTB_SCHEDULER_DEBUG=1
+    export COCOTB_PDB_ON_EXCEPTION=1
+fi
+
 if [[ -f ./${DUT}.sv ]]; then
+    echo "Compiling $DUT"
     vlog -64 -incr -sv -work xil_defaultlib ./${DUT}.sv
+else
+    echo "./${DUT}.sv not found. Not compiling $DUT"
 fi
 
 if [[ ${GUI} == "1" ]]; then

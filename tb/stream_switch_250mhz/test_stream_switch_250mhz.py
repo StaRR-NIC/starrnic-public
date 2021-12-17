@@ -20,11 +20,21 @@ class TB:
         cocotb.fork(Clock(dut.axis_aclk, 2, units="ns").start())
         cocotb.fork(Clock(dut.axil_aclk, 4, units="ns").start())
 
-        self.source_tx = AxiStreamSource(AxiStreamBus.from_prefix(dut, "s_axis_qdma_h2c"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.source_rx = AxiStreamSource(AxiStreamBus.from_prefix(dut, "s_axis_adap_rx_250mhz"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.sink_tx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_adap_tx_250mhz"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.sink_rx = AxiStreamSink(AxiStreamBus.from_prefix(dut, "m_axis_qdma_c2h"), dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
-        self.control = AxiLiteMaster(AxiLiteBus.from_prefix(dut, "axil_splitter_"), dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
+        self.source_tx = AxiStreamSource(
+            AxiStreamBus.from_prefix(dut, "s_axis_qdma_h2c"),
+            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+        self.source_rx = AxiStreamSource(
+            AxiStreamBus.from_prefix(dut, "s_axis_adap_rx_250mhz"),
+            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+        self.sink_tx = AxiStreamSink(
+            AxiStreamBus.from_prefix(dut, "m_axis_adap_tx_250mhz"),
+            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+        self.sink_rx = AxiStreamSink(
+            AxiStreamBus.from_prefix(dut, "m_axis_qdma_c2h"),
+            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+        self.control = AxiLiteMaster(
+            AxiLiteBus.from_prefix(dut, "s_axil"),
+            dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
 
     def set_idle_generator(self, generator=None):
         if generator:
@@ -56,16 +66,25 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     tb.set_idle_generator(idle_inserter)
     tb.set_backpressure_generator(backpressure_inserter)
 
+    base = 0x0000
+    dp_base = 0x40000
+
     # from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
     # remote_pdb.set_trace()
-    base = 0x1000
-    control_reg = tb.control.read(0x0000 + base)
-    mi_mux = tb.control.read(0x0040 + base)
-    print("Read splitter regs: Control {}, MI_MUX {}".format(control_reg, mi_mux))
-    await tb.control.write(base + 0x0040, b'\x00')
+    control_reg = await tb.control.read(0x0000 + base, 4)
+    mi_mux1 = await tb.control.read(0x0040 + base, 4)
+    mi_mux2 = await tb.control.read(0x0044 + base, 4)
+    dut.log.info(
+        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
+        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
+
+    # configure splitter master1 to get traffic from slave
+    tb.log.info("Configuring splitter master1")
+    await tb.control.write(0x0040 + base, b'\x00')
+    await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
+    await tb.control.read(0x0040 + base, 4)  # check configuration
 
     test_frames = []
-
     test_frame = AxiStreamFrame(b'101010101')
     await tb.source_tx.send(test_frame)
     test_frames.append(test_frame)
@@ -78,7 +97,37 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
         assert rx_frame.tdata == test_frame.tdata
 
-    assert tb.sink.empty()
+    assert tb.sink_tx.empty()
+
+    bytes_sent_measured = await tb.control.read(dp_base, 4)
+    int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
+    assert 0 == int_measured # We sent using different path
+
+    # configure splitter master2 to get traffic from slave
+    tb.log.info("Configuring master2")
+    await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80') # disable master1
+    await tb.control.write(0x0044 + base, b'\x00')
+    await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
+    await tb.control.read(0x0040 + base, 4)  # check configuration
+
+    test_frames = []
+    test_frame = AxiStreamFrame(b'11111111')
+    await tb.source_tx.send(test_frame)
+    test_frames.append(test_frame)
+
+    tb.log.info("Frames sent")
+
+    for test_frame in test_frames:
+        tb.log.info("Trying to recv frames")
+        rx_frame = await tb.sink_tx.recv()
+
+        assert rx_frame.tdata == test_frame.tdata
+
+    assert tb.sink_tx.empty()
+
+    bytes_sent_measured = await tb.control.read(dp_base, 4)
+    int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
+    assert len(test_frames[-1].tdata) == int_measured
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

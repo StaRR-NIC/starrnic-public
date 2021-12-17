@@ -116,6 +116,13 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
     await tb.control.read(0x0040 + base, 4)  # check configuration
 
+    control_reg = await tb.control.read(0x0000 + base, 4)
+    mi_mux1 = await tb.control.read(0x0040 + base, 4)
+    mi_mux2 = await tb.control.read(0x0044 + base, 4)
+    dut.log.info(
+        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
+        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
+
     tb.log.info("Testing master2")
     test_frames = []
     test_frame = AxiStreamFrame(b'1111111111')
@@ -128,6 +135,16 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     assert tb.sink1.empty()
     assert tb.sink2.empty()
+
+    control_reg = await tb.control.read(0x0000 + base, 4)
+    mi_mux1 = await tb.control.read(0x0040 + base, 4)
+    mi_mux2 = await tb.control.read(0x0044 + base, 4)
+    dut.log.info(
+        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
+        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
+
+    await RisingEdge(dut.aclk)
+    await RisingEdge(dut.aclk)
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])
