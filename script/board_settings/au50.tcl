@@ -18,3 +18,4 @@
 set part xcu50-fsvh2104-2-e
 set board_part xilinx.com:au50:part0:1.2
 set zynq_family 0
+set hw_device xcu50_u55n_0
