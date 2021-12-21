@@ -19,6 +19,13 @@ vsim -voptargs=+acc -onfinish $onfinish \
     -L secureip -lib xil_defaultlib \
     -pli $pli \
     xil_defaultlib.${env(DUT)} xil_defaultlib.glbl
+
+# vsim -voptargs="+acc" -onfinish $onfinish \
+#      +transport_int_delays +pulse_e/0 +pulse_int_e/0 \
+#      +pulse_r/0 +pulse_int_r/0 \
+#      -L xil_defaultlib -L simprims_ver -L secureip \
+#      -lib xil_defaultlib xil_defaultlib.${env(DUT)} xil_defaultlib.glbl
+
 log -recursive /*
 
 if {${env(GUI)}} { 

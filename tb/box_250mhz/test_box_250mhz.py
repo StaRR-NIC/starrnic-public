@@ -17,24 +17,27 @@ class TB:
         self.log.setLevel(logging.DEBUG)
         self.log.info("Got DUT: {}".format(dut))
 
+        # from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
+        # rpdb.set_trace()
+
         cocotb.fork(Clock(dut.axis_aclk, 2, units="ns").start())
         cocotb.fork(Clock(dut.axil_aclk, 4, units="ns").start())
 
         self.source_tx = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s_axis_qdma_h2c"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_250mhz_inst.axis_aresetn, reset_active_level=False)
         self.source_rx = AxiStreamSource(
             AxiStreamBus.from_prefix(dut, "s_axis_adap_rx_250mhz"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_250mhz_inst.axis_aresetn, reset_active_level=False)
         self.sink_tx = AxiStreamSink(
             AxiStreamBus.from_prefix(dut, "m_axis_adap_tx_250mhz"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_250mhz_inst.axis_aresetn, reset_active_level=False)
         self.sink_rx = AxiStreamSink(
             AxiStreamBus.from_prefix(dut, "m_axis_qdma_c2h"),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_250mhz_inst.axis_aresetn, reset_active_level=False)
         self.control = AxiLiteMaster(
             AxiLiteBus.from_prefix(dut, "s_axil"),
-            dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
+            dut.axil_aclk, dut.stream_switch_250mhz_inst.axil_aresetn, reset_active_level=False)
 
     def set_idle_generator(self, generator=None):
         if generator:
@@ -45,15 +48,21 @@ class TB:
             self.sink_tx.set_pause_generator(generator())
 
     async def reset(self):
+        self.dut.box_rstn.setimmediatevalue(1)
         self.dut.mod_rstn.setimmediatevalue(1)
         # mod rst signals are synced with the axilite clock not axistream clock
         await RisingEdge(self.dut.axil_aclk)
         await RisingEdge(self.dut.axil_aclk)
         self.dut.mod_rstn.value = 0
+        self.dut.box_rstn.value = 0
         await RisingEdge(self.dut.axil_aclk)
         await RisingEdge(self.dut.axil_aclk)
         self.dut.mod_rstn.value = 1
-        await RisingEdge(self.dut.mod_rst_done)
+        self.dut.box_rstn.value = 1
+        self.log.info("Awaiting rst done signals.")
+        # await RisingEdge(self.dut.mod_rst_done[0])
+        await RisingEdge(self.dut.box_rst_done)
+        self.log.info("Done awaiting rst done signals.")
         # await RisingEdge(self.dut.axil_aclk)
         # await RisingEdge(self.dut.axil_aclk)
 

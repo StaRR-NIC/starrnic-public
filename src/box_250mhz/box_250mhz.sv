@@ -28,6 +28,7 @@ module box_250mhz #(
   output                         s_axil_awready,
   input                          s_axil_wvalid,
   input                   [31:0] s_axil_wdata,
+  input                    [3:0] s_axil_wstrb, // Dummy, only used for sim.
   output                         s_axil_wready,
   output                         s_axil_bvalid,
   output                   [1:0] s_axil_bresp,
