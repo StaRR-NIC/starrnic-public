@@ -26,7 +26,6 @@
 // --------------------------------------------------
 //   0x80000   |  0xFFFFF   |  Dummy (8 * 2^16 addresses = 19 bits)
 // --------------------------------------------------
-// TODO(108anup): Verify address bits
 
 `timescale 1ns/1ps
 module box_250mhz_address_map (

@@ -134,7 +134,7 @@ module byte_counter_250mhz #(
       .size             (size[`getvec(16, i)]),
 
       .aclk             (axis_aclk),
-      .aresetn          (axil_aresetn)
+      .aresetn          (axis_aresetn)
     );
   end
   endgenerate
@@ -279,8 +279,8 @@ module byte_counter_250mhz #(
           reg_dout[31:16] <= 0;
         end
         REG_BYTE_COUNT_IF2: begin
-        reg_dout[15:0] <= size[NUM_INTF*16-16+:16];
-        reg_dout[31:16] <= 0;
+          reg_dout[15:0] <= size[NUM_INTF*16-16+:16];
+          reg_dout[31:16] <= 0;
         end
         default: begin
           reg_dout <= 32'hDEADBEEF;

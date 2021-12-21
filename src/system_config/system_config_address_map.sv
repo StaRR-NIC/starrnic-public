@@ -202,7 +202,7 @@ module system_config_address_map #(
   localparam C_ADAP0_BASE_ADDR = 32'h0B000;
   localparam C_CMAC1_BASE_ADDR = 32'h0C000;
   localparam C_ADAP1_BASE_ADDR = 32'h0F000;
-  localparam C_SMON_BASE_ADDR  = 32'h10000;  // 14 bits
+  localparam C_SMON_BASE_ADDR  = 32'h10000;  // 13 bits
   localparam C_BOX1_BASE_ADDR  = 32'h200000; // 20 bits
   localparam C_BOX0_BASE_ADDR  = 32'h100000; // 20 bits
 
