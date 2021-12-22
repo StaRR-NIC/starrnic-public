@@ -47,7 +47,7 @@ current_hw_device [get_hw_devices $hw_device]
 refresh_hw_device -update_hw_probes false [lindex [get_hw_devices $hw_device] 0]
 set_property PROBES.FILE {} [get_hw_devices $hw_device]
 set_property FULL_PROBES.FILE {} [get_hw_devices $hw_device]
-set_property PROGRAM.FILE {$options(-bitstream_path)} [get_hw_devices $hw_device]
+set_property PROGRAM.FILE ${options(-bitstream_path)} [get_hw_devices $hw_device]
 program_hw_devices [get_hw_devices $hw_device]
 refresh_hw_device [lindex [get_hw_devices $hw_device] 0]
 
