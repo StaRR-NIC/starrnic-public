@@ -85,9 +85,11 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
     assert len(test_frames[-1].tdata) == int_measured
 
-    await RisingEdge(dut.axis_aclk)
-    await RisingEdge(dut.axis_aclk)
+    await tb.control.read(0x0004 + base, 4)
+    await tb.control.read(0x0008 + base, 4)
 
+    await RisingEdge(dut.axis_aclk)
+    await RisingEdge(dut.axis_aclk)
 
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])

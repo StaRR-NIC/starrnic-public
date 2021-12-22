@@ -277,7 +277,7 @@ module stream_switch_250mhz #(
         .axil_aresetn   (axil_aresetn),
 
         .axis_aclk      (axis_aclk),
-        .axis_aresetn   (axis_areset),
+        .axis_aresetn   (axis_aresetn),
 
         .s_axil_awvalid (axil_dp_awvalid),
         .s_axil_awaddr  (axil_dp_awaddr),

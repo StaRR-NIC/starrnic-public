@@ -59,8 +59,8 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     mi_mux = await tb.control.read(0x0040 + base, 4)
     print("Read splitter regs: Control {}, MI_MUX {}".format(control_reg.data, mi_mux.data))
 
-    await RisingEdge(dut.axil_aclk)
-    await RisingEdge(dut.axil_aclk)
+    # await RisingEdge(dut.axil_aclk)
+    # await RisingEdge(dut.axil_aclk)
 
 
 def cycle_pause():
