@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 # *************************************************************************
-read_verilog -quiet -sv byte_counter_250mhz.sv
+read_verilog -quiet -sv pkt_size_counter.sv
 
 source stream_switch_axi_crossbar.tcl
 read_verilog -quiet stream_switch_address_map_inst.vh
