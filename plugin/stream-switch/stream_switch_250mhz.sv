@@ -270,9 +270,9 @@ module stream_switch_250mhz #(
         .aresetn       (axil_aresetn)
       );
 
-      byte_counter_250mhz #(
+      pkt_size_counter #(
         .NUM_INTF (1)
-      ) byte_counter_inst (
+      ) pkt_size_counter_inst (
         .axil_aclk      (axil_aclk),
         .axil_aresetn   (axil_aresetn),
 
@@ -313,8 +313,8 @@ module stream_switch_250mhz #(
 
       // // For debugging bypass bytecounter also including the control interface.
       // axi_lite_slave #(
-      //   .REG_ADDR_W (12),
-      //   .REG_PREFIX (16'hB000)
+      //   .REG_ADDR_W (18),
+      //   .REG_PREFIX (16'hE000)
       // ) dp_axilite_not_in_use (
       //   .s_axil_awvalid (axil_dp_awvalid),
       //   .s_axil_awaddr  (axil_dp_awaddr),

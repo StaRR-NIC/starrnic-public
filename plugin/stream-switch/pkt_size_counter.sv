@@ -17,7 +17,7 @@
 // *************************************************************************
 `include "open_nic_shell_macros.vh"
 `timescale 1ns/1ps
-module byte_counter_250mhz #(
+module pkt_size_counter #(
   parameter int NUM_INTF = 1
 ) (
   input                     s_axil_awvalid,
@@ -180,4 +180,4 @@ module byte_counter_250mhz #(
     end
   end
 
-endmodule: byte_counter_250mhz
+endmodule: pkt_size_counter

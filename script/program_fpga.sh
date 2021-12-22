@@ -29,7 +29,7 @@ if [ -e "/sys/bus/pci/devices/$device_bdf" ]; then
 fi
 
 # Remove
-if [ $bridge_bdf != "" ]; then
+if [[ $bridge_bdf != "" ]]; then
     echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/${device_bdf}/remove" > /dev/null
 else
     bridge_bdf=0000:3a:00.0
