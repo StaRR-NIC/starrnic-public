@@ -25,7 +25,7 @@ vlog -64 -incr -sv -work xil_defaultlib  "+incdir+../../../../../../../plugin/st
 "../../../../../../../src/utility/axi_lite_register.sv" \
 "../../../../../../../src/utility/axi_lite_slave.sv" \
 "../../../../../../../src/utility/axi_stream_size_counter.sv" \
-"../../../../../../../plugin/stream-switch/byte_counter_250mhz.sv" \
+"../../../../../../../plugin/stream-switch/pkt_size_counter.sv" \
 "../../../../../../../src/utility/generic_reset.sv" \
 "../../../../../../../plugin/stream-switch/stream_switch_250mhz.sv" \
 
