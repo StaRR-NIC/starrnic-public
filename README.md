@@ -30,16 +30,21 @@
   - Physically install an FPGA supported by Open-NIC
   - Install FPGA driver and update firmware (follow FPGA data sheet and user guide)
     - Installed at `/opt` on neptune1, neptune3
-  - Obtain board files for your FPGA
+  - Obtain board files for your FPGA (from https://www.xilinx.com/member/alveo-vivado.html#u250)
     - Installed at `/datadrive/board-files` on neptune*
   - Clone and compile open-nic-driver (follow open-nic-driver README)
   - Clone pcimem (follow pcimem README)
 - Build setup
-  - Install Vitis 2020.2 (for open-nic-shell), Vitis 2021.1 (for VitisP4Net).
+  - Install Vitis/Vivado 2020.2 (for open-nic-shell), Vitis 2021.1 (for VitisP4Net).
     - Installed at `/tools/Xilinx` on neptune1, neptune3
-- Simulation setup
+- Simulation setup (Use Mentor modelsim with cocotb for Xilinx IPs and custom sources using Xilinx simulation library and custom flow with cocotb)
   - Install modelsim.
-    - Fetched from ECE AFS. Installed at `/opt` on neptune1, neptune3
+    - Fetched from CMU ECE AFS. Installed at `/opt` on neptune1
+  - Install cocotb and required sub-packages (cocotb-axi, cocotb-eth, etc.) (from https://github.com/corundum/corundum/wiki/Getting-Started)
+    - `pip install cocotb cocotb-bus cocotb-test cocotbext-axi cocotbext-eth cocotbext-pcie pytest scapy`
+    - `pip install tox pytest-xdist pytest-sugar`
+      - Installed in `wbase` conda environment on neptune1
+
 
 ## Build
 - Ensure modelsim and vitis are in path and their settings are loaded.
@@ -54,6 +59,10 @@
   -board_repo /datadrive/board-files -board au50 \
   -impl 1 -post_impl 1 -user_plugin ../plugin/stream-switch \
   -tag <any tag you wan to add>
+
+  # This will create bitstream in (if there were no errors)
+  build/au50_<tag>/open_nic_shell/open_nic_shell.runs/impl_1/open_nic_shell.bit
+  # Check runme.log for errors in the directory for the run that failed.
   ```
 - For simulation (generating simulation sources and dependencies for module)
   - E.g. for `stream_switch_250mhz` module (this can also be used for any modules that `stream_switch_250mhz` instantiates):
@@ -77,6 +86,7 @@
   ```
   ./script/program_fpga.sh 3b:00.0 ../build/au50_stream_switch_pkt_size_counter/open_nic_shell/open_nic_shell.runs/impl_1/open_nic_shell.bit au50
   ```
+  The first time you program, you also need to warm reboot the machine as the FPGA pcie device changes from an accelerator to a memory controller.
 - Configure the NIC
   - If using `stream_switch_250mhz` plugin, then run/refer:
     ```

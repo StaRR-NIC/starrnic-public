@@ -17,10 +17,12 @@ sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100000
 
 # Use counter
 # sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100044 w 0x00
+# sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100040 w 0x80000000
 # sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100000 w 0x02
 
 # Bypass
 sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100040 w 0x00
+sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100044 w 0x80000000
 sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100000 w 0x02
 
 ping 10.0.0.61 -c 1

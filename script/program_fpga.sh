@@ -14,6 +14,7 @@ set -Eeuo pipefail
 set -x
 
 device_bdf="0000:$1"
+# device_bdf2="0000:$1"
 bridge_bdf=""
 bitstream_path=$2
 board=$3
@@ -31,6 +32,7 @@ fi
 # Remove
 if [[ $bridge_bdf != "" ]]; then
     echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/${device_bdf}/remove" > /dev/null
+    # echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/${device_bdf2}/remove" > /dev/null
 else
     bridge_bdf=0000:3a:00.0
 fi
@@ -43,5 +45,6 @@ vivado -mode tcl -source ./program_fpga.tcl \
 # Rescan
 echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/rescan" > /dev/null
 sudo setpci -s $device_bdf COMMAND=0x02
+# sudo setpci -s $device_bdf2 COMMAND=0x02
 
 echo "program_fpga.sh completed"
