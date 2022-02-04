@@ -31,9 +31,9 @@ localparam C_NUM_USER_BLOCK = 1;
 // "mod_rst_done" are tied to 0
 assign mod_rst_done[15:C_NUM_USER_BLOCK] = {(16-C_NUM_USER_BLOCK){1'b1}};
 
-stream_switch_250mhz #(
+stream_switch_dfx #(
   .NUM_INTF (NUM_PHYS_FUNC)
-) stream_switch_250mhz_inst (
+) stream_switch_dfx_inst (
   .s_axil_awvalid                   (axil_p2p_awvalid),
   .s_axil_awaddr                    (axil_p2p_awaddr),
   .s_axil_awready                   (axil_p2p_awready),

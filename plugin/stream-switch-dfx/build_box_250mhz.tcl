@@ -16,6 +16,7 @@
 #
 # *************************************************************************
 read_verilog -quiet -sv pkt_size_counter.sv
+read_verilog -quiet -sv pkt_size_counter5.sv
 
 source stream_switch_axi_crossbar.tcl
 read_verilog -quiet stream_switch_address_map_inst.vh
@@ -25,4 +26,4 @@ read_verilog -quiet stream_switch_address_map.v
 source axis_switch_combiner_tdest.tcl
 source axis_switch_splitter_axilite.tcl
 
-read_verilog -quiet -sv stream_switch_250mhz.sv
+read_verilog -quiet -sv stream_switch_dfx.sv
