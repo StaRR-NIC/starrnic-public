@@ -431,3 +431,11 @@ if {$impl} {
 if {$post_impl} {
     _do_post_impl $top_build_dir $top impl_1 $zynq_family
 }
+
+
+# PR
+# Disable constraints
+# set rm_list [list pkt_size_counter pkt_size_counter5]
+# foreach rm $rm_list {
+#     synth_design -mode out_of_context -part $part -top $rm
+# }

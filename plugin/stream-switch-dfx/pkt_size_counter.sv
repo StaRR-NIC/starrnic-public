@@ -15,11 +15,11 @@
 // limitations under the License.
 //
 // *************************************************************************
-`include "open_nic_shell_macros.vh"
+
+//`include "open_nic_shell_macros.vh"
+`define getvec(width, index)            ((index)*(width)) +: (width)
 `timescale 1ns/1ps
-module pkt_size_counter #(
-  parameter int NUM_INTF = 1
-) (
+module rm_filler (
   input                     s_axil_awvalid,
   input              [31:0] s_axil_awaddr,
   output                    s_axil_awready,
@@ -181,4 +181,4 @@ module pkt_size_counter #(
     end
   end
 
-endmodule: pkt_size_counter
+endmodule: rm_filler

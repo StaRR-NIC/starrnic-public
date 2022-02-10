@@ -16,7 +16,7 @@
 //
 // *************************************************************************
 `include "open_nic_shell_macros.vh"
-`default_nettype none
+// `default_nettype none
 `timescale 1ns/1ps
 module stream_switch_dfx #(
   parameter int NUM_INTF = 1
@@ -271,9 +271,7 @@ module stream_switch_dfx #(
         .aresetn       (axil_aresetn)
       );
 
-      black_box_placeholder_rm #(
-        .NUM_INTF(1)
-      ) black_box_inst (
+      rm_filler rm_filler_inst (
         .axil_aclk      (axil_aclk),
         .axil_aresetn   (axil_aresetn),
 
@@ -449,48 +447,3 @@ module stream_switch_dfx #(
   endgenerate
 
 endmodule: stream_switch_dfx
-
-
-module black_box_placeholder_rm #(
-  parameter int NUM_INTF = 1
-) (
-  input                     s_axil_awvalid,
-  input              [31:0] s_axil_awaddr,
-  output                    s_axil_awready,
-  input                     s_axil_wvalid,
-  input              [31:0] s_axil_wdata,
-  input               [3:0] s_axil_wstrb, // Dummy, only used for sim.
-  output                    s_axil_wready,
-  output                    s_axil_bvalid,
-  output              [1:0] s_axil_bresp,
-  input                     s_axil_bready,
-  input                     s_axil_arvalid,
-  input              [31:0] s_axil_araddr,
-  output                    s_axil_arready,
-  output                    s_axil_rvalid,
-  output             [31:0] s_axil_rdata,
-  output              [1:0] s_axil_rresp,
-  input                     s_axil_rready,
-
-  input      [NUM_INTF-1:0] s_axis_tvalid,
-  input  [512*NUM_INTF-1:0] s_axis_tdata,
-  input   [64*NUM_INTF-1:0] s_axis_tkeep,
-  input      [NUM_INTF-1:0] s_axis_tlast,
-  input   [48*NUM_INTF-1:0] s_axis_tuser,
-  output     [NUM_INTF-1:0] s_axis_tready,
-
-  output     [NUM_INTF-1:0] m_axis_tvalid,
-  output [512*NUM_INTF-1:0] m_axis_tdata,
-  output  [64*NUM_INTF-1:0] m_axis_tkeep,
-  output     [NUM_INTF-1:0] m_axis_tlast,
-  output  [48*NUM_INTF-1:0] m_axis_tuser,
-  input      [NUM_INTF-1:0] m_axis_tready,
-
-  input                     axil_aclk,
-  input                     axil_aresetn,
-
-  input                     axis_aclk,
-  input                     axis_aresetn
-);
-
-endmodule: black_box_placeholder_rm
