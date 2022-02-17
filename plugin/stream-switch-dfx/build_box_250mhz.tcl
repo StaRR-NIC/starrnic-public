@@ -15,8 +15,8 @@
 # limitations under the License.
 #
 # *************************************************************************
-read_verilog -quiet -sv pkt_size_counter.sv
-read_verilog -quiet -sv pkt_size_counter5.sv
+# read_verilog -quiet -sv pkt_size_counter.sv
+# read_verilog -quiet -sv pkt_size_counter5.sv
 
 source stream_switch_axi_crossbar.tcl
 read_verilog -quiet stream_switch_address_map_inst.vh

@@ -25,7 +25,6 @@ module rm_filler (
   output                    s_axil_awready,
   input                     s_axil_wvalid,
   input              [31:0] s_axil_wdata,
-  input               [3:0] s_axil_wstrb, // Dummy, only used for sim.
   output                    s_axil_wready,
   output                    s_axil_bvalid,
   output              [1:0] s_axil_bresp,
@@ -38,19 +37,19 @@ module rm_filler (
   output              [1:0] s_axil_rresp,
   input                     s_axil_rready,
 
-  input      [NUM_INTF-1:0] s_axis_tvalid,
-  input  [512*NUM_INTF-1:0] s_axis_tdata,
-  input   [64*NUM_INTF-1:0] s_axis_tkeep,
-  input      [NUM_INTF-1:0] s_axis_tlast,
-  input   [48*NUM_INTF-1:0] s_axis_tuser,
-  output     [NUM_INTF-1:0] s_axis_tready,
+  input      [1-1:0] s_axis_tvalid,
+  input  [512*1-1:0] s_axis_tdata,
+  input   [64*1-1:0] s_axis_tkeep,
+  input      [1-1:0] s_axis_tlast,
+  input   [48*1-1:0] s_axis_tuser,
+  output     [1-1:0] s_axis_tready,
 
-  output     [NUM_INTF-1:0] m_axis_tvalid,
-  output [512*NUM_INTF-1:0] m_axis_tdata,
-  output  [64*NUM_INTF-1:0] m_axis_tkeep,
-  output     [NUM_INTF-1:0] m_axis_tlast,
-  output  [48*NUM_INTF-1:0] m_axis_tuser,
-  input      [NUM_INTF-1:0] m_axis_tready,
+  output     [1-1:0] m_axis_tvalid,
+  output [512*1-1:0] m_axis_tdata,
+  output  [64*1-1:0] m_axis_tkeep,
+  output     [1-1:0] m_axis_tlast,
+  output  [48*1-1:0] m_axis_tuser,
+  input      [1-1:0] m_axis_tready,
 
   input                     axil_aclk,
   input                     axil_aresetn,
@@ -58,6 +57,8 @@ module rm_filler (
   input                     axis_aclk,
   input                     axis_aresetn
 );
+
+  localparam NUM_INTF = 1;
 
   // Wires connecting counter registers
   wire [NUM_INTF*16-1:0] size;
@@ -78,7 +79,7 @@ module rm_filler (
 
   // Counters for each INTF
   generate for (genvar i = 0; i < NUM_INTF; i++) begin
-    axi_stream_size_counter #(
+    axi_stream_size_counter_rm_counter #(
       .TDATA_W (512)
     ) byte_counter_inst (
       .p_axis_tvalid    (s_axis_tvalid[i]),
@@ -99,7 +100,7 @@ module rm_filler (
   // Per INTF Pipeline
   generate for (genvar i = 0; i < NUM_INTF; i++) begin
 
-    axi_stream_pipeline tx_ppl_inst (
+    axi_stream_pipeline_rm_counter tx_ppl_inst (
       .s_axis_tvalid (s_axis_tvalid[i]),
       .s_axis_tdata  (s_axis_tdata[`getvec(512, i)]),
       .s_axis_tkeep  (s_axis_tkeep[`getvec(64, i)]),
@@ -120,7 +121,7 @@ module rm_filler (
   end
   endgenerate
 
-  axi_lite_register #(
+  axi_lite_register_rm_counter #(
     .CLOCKING_MODE ("independent_clock"),
     .ADDR_W        (C_REG_ADDR_W),
     .DATA_W        (32)

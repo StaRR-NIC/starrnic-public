@@ -27,3 +27,4 @@ set_property BITSTREAM.CONFIG.EXTMASTERCCLK_EN disable [current_design]
 set_property BITSTREAM.CONFIG.SPI_FALL_EDGE YES [current_design]
 set_property BITSTREAM.CONFIG.UNUSEDPIN Pullup [current_design]
 set_property BITSTREAM.CONFIG.SPI_32BIT_ADDR Yes [current_design]
+
