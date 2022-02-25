@@ -1,5 +1,11 @@
 # StaRR-NIC
 
+## TODO:
+1. Add docs about license server setup
+2. Add steps for PR project setup. Make a script for it.
+3. Make configure stream switch script do first time, and module specific setup.
+4. Add calculation of packet sizes for common packets.
+
 ## Code Structure:
 
 ```
