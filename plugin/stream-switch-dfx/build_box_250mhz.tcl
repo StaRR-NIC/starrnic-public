@@ -20,6 +20,7 @@
 
 source stream_switch_axi_crossbar.tcl
 read_verilog -quiet stream_switch_address_map_inst.vh
+read_verilog -quiet starrnic_bypass.vh
 read_verilog -quiet stream_switch_address_map.v
 
 # source stream_switch_axis_switch_combiner_axilite.tcl

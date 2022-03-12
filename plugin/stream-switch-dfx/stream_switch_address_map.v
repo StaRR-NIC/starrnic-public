@@ -14,7 +14,9 @@
 // --------------------------------------------------
 //   0x40000   |  0x7FFFF   |  Control path (connected to p2p or dp) (18 bits)
 // --------------------------------------------------
-// TODO(108anup): Verify address bits
+
+// TODO(108anup): Each address range needs to be power of 2.
+//  To get other sizes, use multiple address ranges.
 
 `timescale 1ns/1ps
 module stream_switch_address_map (
