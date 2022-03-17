@@ -17,7 +17,7 @@ assign m_axis_adap_tx_250mhz_tuser_dst[`getvec(16, intf_idx)]  = 16'h1 << (6 + i
 
 assign m_axis_qdma_c2h_tuser_size[`getvec(16, intf_idx)]       = axis_qdma_c2h_tuser[0+:16];
 assign m_axis_qdma_c2h_tuser_src[`getvec(16, intf_idx)]        = axis_qdma_c2h_tuser[16+:16];
-assign m_axis_qdma_c2h_tuser_dst[`getvec(16, intf_idx)]        = 16'h1 << i;
+assign m_axis_qdma_c2h_tuser_dst[`getvec(16, intf_idx)]        = 16'h1 << intf_idx;
 
 // For future if we want StaRR-NIC pipeline on multiple interfaces, change this localparam to create wires.
 // 4 sets of wires for connecting stream switch splitter (s) and combiner (c)

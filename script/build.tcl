@@ -25,7 +25,7 @@ proc _do_impl {jobs {strategies ""}} {
         for {set i 1} {$i < [llength $strategies]} {incr i 1} {
             set r impl_[expr $i + 1]
             set s [lindex $strategies $i]
-            create_run $r -flow {Vivado Implementation 2020} -parent_run synth_1 -strategy "$s"
+            create_run $r -flow {Vivado Implementation 2021} -parent_run synth_1 -strategy "$s"
             lappend impl_runs $r
         }
         launch_runs $impl_runs -to_step write_bitstream -jobs $jobs
@@ -50,12 +50,13 @@ proc _do_post_impl {build_dir top impl_run {zynq_family 0}} {
     }
 }
 
-# # Vivado version check
-# set VIVADO_VERSION "2020.2"
-# if {![string equal [version -short] $VIVADO_VERSION]} {
-#     puts "OpenNIC shell requires Vivado version $VIVADO_VERSION"
-#     exit
-# }
+# Vivado version check
+set VIVADO_VERSION "2021.2"
+if {![string equal [version -short] $VIVADO_VERSION]} {
+    puts "OpenNIC shell requires Vivado version $VIVADO_VERSION"
+    puts "To use another version change flow 'Vivado Implementation 2021' to desired flow version in all tcl scripts."
+    exit
+}
 
 # Directory variables
 set root_dir [file normalize ..]
@@ -399,6 +400,8 @@ if {$sim} {
 }
 
 # Read user plugin files
+set pr_impl_runs
+# Above is only used for pr flow
 set include_dirs [get_property include_dirs [current_fileset]]
 foreach freq [list 250mhz 322mhz] {
     set box "box_$freq"
@@ -424,9 +427,16 @@ foreach freq [list 250mhz 322mhz] {
 set_property include_dirs $include_dirs [current_fileset]
 
 # Implement design
-if {$impl} {
+if {$impl && !${build_options(-pr)}} {
     update_compile_order -fileset sources_1
     _do_impl $jobs {"Vivado Implementation Defaults"}
+}
+
+if {$impl && ${build_options(-pr)}} {
+    update_compile_order -fileset sources_1
+    # The PR modules would have updated $pr_impl_runs
+    # Just need to launch these and wait on these
+    # Must have done floorplanning before this
 }
 
 if {$post_impl} {
