@@ -1,6 +1,6 @@
 set_property PR_FLOW 1 [current_project]
 
-set parition_name partition1
+set partition_name partition1
 set rm_intf_name ${partition_name}_rm_intf
 # Above should be the name of all the reconfigurable modules.
 set rm_inst_name ${rm_intf_name}_inst

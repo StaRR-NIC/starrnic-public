@@ -1,7 +1,9 @@
+set cur_dir [pwd]
+cd pkt_size_counter5
 set this_rm_name pkt_size_counter5
 create_reconfig_module -name $this_rm_name -partition_def [get_partition_defs $partition_name ]
 
-read_verilog -quiet -sv axi_lite_clock_converter_rm_counter5.sv
+read_verilog -quiet -sv axi_lite_register_rm_counter5.sv
 read_verilog -quiet -sv axi_stream_size_counter_rm_counter5.sv
 read_verilog -quiet -sv pkt_size_counter5.sv
 
@@ -21,3 +23,4 @@ update_compile_order -fileset $this_rm_name
 create_pr_configuration -name config_counter5 -partitions [list box_250mhz_inst/stream_switch_dfx_inst/${rm_inst_name}:$this_rm_name ]
 # Check if this is correct...
 create_run child_0_impl_1 -parent_run impl_1 -flow {Vivado Implementation 2021} -pr_config config_counter5
+cd $cur_dir

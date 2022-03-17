@@ -182,5 +182,6 @@ module stream_switch_dfx #(
       .aresetn       (axil_aresetn)
     );
   end
+  endgenerate
 
 endmodule: stream_switch_dfx
