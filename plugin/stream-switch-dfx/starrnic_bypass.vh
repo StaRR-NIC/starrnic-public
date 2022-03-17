@@ -168,7 +168,7 @@ axi_stream_pipeline tx_ppl_inst (
   .aresetn       (axil_aresetn)
 );
 
-rm_filler rm_filler_inst (
+partition1_rm_intf partition1_rm_intf_inst (
   .axil_aclk      (axil_aclk),
   .axil_aresetn   (axil_aresetn),
 

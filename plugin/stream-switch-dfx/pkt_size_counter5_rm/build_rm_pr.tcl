@@ -18,6 +18,6 @@ move_files -of_objects [get_reconfig_modules $this_rm_name] [get_files  ${build_
 update_compile_order -fileset $this_rm_name
 
 
-create_pr_configuration -name config_counter5 -partitions [list box_250mhz_inst/stream_switch_dfx_inst/${rm_intf_name}_inst:$this_rm_name ]
-
+create_pr_configuration -name config_counter5 -partitions [list box_250mhz_inst/stream_switch_dfx_inst/${rm_inst_name}:$this_rm_name ]
+# Check if this is correct...
 create_run child_0_impl_1 -parent_run impl_1 -flow {Vivado Implementation 2021} -pr_config config_counter5

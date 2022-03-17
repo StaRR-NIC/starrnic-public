@@ -30,6 +30,6 @@ source axis_switch_splitter_axilite.tcl
 read_verilog -quiet -sv stream_switch_dfx.sv
 source pkt_size_counter/build_rm.tcl
 
-if ($pr) {
+if ($build_options(-pr)) {
     source pr_flow.tcl
 }

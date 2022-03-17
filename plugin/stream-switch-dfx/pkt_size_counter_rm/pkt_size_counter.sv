@@ -19,7 +19,7 @@
 //`include "open_nic_shell_macros.vh"
 `define getvec(width, index)            ((index)*(width)) +: (width)
 `timescale 1ns/1ps
-module rm_filler (
+module partition1_rm_intf (
   input                     s_axil_awvalid,
   input              [31:0] s_axil_awaddr,
   output                    s_axil_awready,
@@ -182,4 +182,4 @@ module rm_filler (
     end
   end
 
-endmodule: rm_filler
+endmodule: partition1_rm_intf
