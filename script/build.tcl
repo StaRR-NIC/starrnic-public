@@ -327,31 +327,6 @@ dict for {ip ip_dir} $ip_dict {
     read_ip -quiet ${ip_dir}/${ip}.xci
 }
 
-# Read user plugin files
-set include_dirs [get_property include_dirs [current_fileset]]
-foreach freq [list 250mhz 322mhz] {
-    set box "box_$freq"
-    set box_plugin ${user_plugin}/${box}
-    
-    if {![file exists $box_plugin] || ![file exists ${user_plugin}/build_${box}.tcl]} {
-        set box_plugin ${plugin_dir}/p2p/${box}
-    }
-
-    source ${box_plugin}/${box}_axi_crossbar.tcl
-    read_verilog -quiet ${box_plugin}/${box}_address_map.v
-    lappend include_dirs $box_plugin
-
-    if {![file exists ${user_plugin}/build_${box}.tcl]} {
-        cd ${plugin_dir}/p2p
-        source build_${box}.tcl
-    } else {
-        cd $user_plugin
-        source build_${box}.tcl
-    }
-    cd $script_dir
-}
-set_property include_dirs $include_dirs [current_fileset]
-
 # Read the source files from each module
 # - First, source "build.tcl" if it is defined under `module_dir`
 # - Then, read all the RTL files under `module_dir` (excluding sub-directories)
@@ -423,6 +398,31 @@ if {$sim} {
     #     -use_ip_compiled_libs
 }
 
+# Read user plugin files
+set include_dirs [get_property include_dirs [current_fileset]]
+foreach freq [list 250mhz 322mhz] {
+    set box "box_$freq"
+    set box_plugin ${user_plugin}/${box}
+
+    if {![file exists $box_plugin] || ![file exists ${user_plugin}/build_${box}.tcl]} {
+        set box_plugin ${plugin_dir}/p2p/${box}
+    }
+
+    source ${box_plugin}/${box}_axi_crossbar.tcl
+    read_verilog -quiet ${box_plugin}/${box}_address_map.v
+    lappend include_dirs $box_plugin
+
+    if {![file exists ${user_plugin}/build_${box}.tcl]} {
+        cd ${plugin_dir}/p2p
+        source build_${box}.tcl
+    } else {
+        cd $user_plugin
+        source build_${box}.tcl
+    }
+    cd $script_dir
+}
+set_property include_dirs $include_dirs [current_fileset]
+
 # Implement design
 if {$impl} {
     update_compile_order -fileset sources_1
@@ -432,7 +432,6 @@ if {$impl} {
 if {$post_impl} {
     _do_post_impl $top_build_dir $top impl_1 $zynq_family
 }
-
 
 # PR
 # Disable constraints
