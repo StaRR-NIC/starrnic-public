@@ -400,8 +400,7 @@ if {$sim} {
 }
 
 # Read user plugin files
-set pr_impl_runs ""
-# Above is only used for pr flow
+set include_dirs [get_property include_dirs [current_fileset]]
 foreach freq [list 250mhz 322mhz] {
     set box "box_$freq"
     set box_plugin ${user_plugin}/${box}
@@ -412,11 +411,7 @@ foreach freq [list 250mhz 322mhz] {
 
     source ${box_plugin}/${box}_axi_crossbar.tcl
     read_verilog -quiet ${box_plugin}/${box}_address_map.v
-
-    # Update include dirs (Doing here as these might be used for building box contents.)
-    set include_dirs [get_property include_dirs [current_fileset]]
     lappend include_dirs $box_plugin
-    set_property include_dirs $include_dirs [current_fileset]
 
     if {![file exists ${user_plugin}/build_${box}.tcl]} {
         cd ${plugin_dir}/p2p
@@ -427,7 +422,18 @@ foreach freq [list 250mhz 322mhz] {
     }
     cd $script_dir
 }
+set_property include_dirs $include_dirs [current_fileset]
 
+# Start pr setup only after the full base design is read into the project!
+set pr_impl_runs ""
+# The pr_flow.tcl should populate above with names of all the impl runs created
+if {$pr} {
+    if {[file exists ${user_plugin}/pr_flow.tcl]} {
+        cd $user_plugin
+        source pr_flow.tcl
+    }
+    cd $script_dir
+}
 
 # Implement design
 if {$impl && !${build_options(-pr)}} {
