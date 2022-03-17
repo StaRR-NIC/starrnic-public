@@ -12,3 +12,4 @@ set_property generate_synth_checkpoint false [get_files -of_objects [get_reconfi
 
 create_pr_configuration -name config_counter -partitions [list box_250mhz_inst/stream_switch_dfx_inst/${rm_inst_name}:$this_rm_name ]
 set_property PR_CONFIGURATION config_counter [get_runs impl_1]
+lappend pr_impl_runs "impl_1"

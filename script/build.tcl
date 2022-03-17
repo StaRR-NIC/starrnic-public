@@ -89,7 +89,7 @@ array set build_options {
     -board       au250
     -tag         ""
     -overwrite   0
-    -jobs        8
+    -jobs        48
     -synth_ip    1
     -impl        0
     -post_impl   0
@@ -400,7 +400,7 @@ if {$sim} {
 }
 
 # Read user plugin files
-set pr_impl_runs
+set pr_impl_runs ""
 # Above is only used for pr flow
 set include_dirs [get_property include_dirs [current_fileset]]
 foreach freq [list 250mhz 322mhz] {
@@ -435,8 +435,12 @@ if {$impl && !${build_options(-pr)}} {
 if {$impl && ${build_options(-pr)}} {
     update_compile_order -fileset sources_1
     # The PR modules would have updated $pr_impl_runs
-    # Just need to launch these and wait on these
     # Must have done floorplanning before this
+    # TODO(108anup) check if floorplanning is done before running implementation
+    launch_runs $pr_impl_runs -to_step write_bitstream -jobs $jobs
+    foreach impl_run $pr_impl_runs {
+        wait_on_run $impl_run
+    }
 }
 
 if {$post_impl} {

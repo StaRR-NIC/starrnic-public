@@ -8,4 +8,5 @@ set rm_inst_name ${rm_intf_name}_inst
 source pkt_size_counter/build_rm_pr.tcl
 source pkt_size_counter5/build_rm_pr.tcl
 
-# Read pblock constraints
+# Read floorplan pblock constraints
+# read_xdc -unmanaged floorplanning/${board}/floorplan.xdc
