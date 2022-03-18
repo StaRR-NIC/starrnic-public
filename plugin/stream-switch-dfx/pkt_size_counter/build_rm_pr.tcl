@@ -5,6 +5,8 @@
 set this_rm_name pkt_size_counter
 
 create_partition_def -name $partition_name -module $rm_intf_name
+update_compile_order -fileset sources_1
+# ^^ I think without updating compile order Vivado does not remove the RM module from hierarchy
 create_reconfig_module -name $this_rm_name -partition_def [get_partition_defs $partition_name ]  -define_from $rm_intf_name
 
 set_property generate_synth_checkpoint false [get_files -of_objects [get_reconfig_modules $this_rm_name] ${build_dir}/vivado_ip/axi_lite_clock_converter_rm_counter/axi_lite_clock_converter_rm_counter.xci]
