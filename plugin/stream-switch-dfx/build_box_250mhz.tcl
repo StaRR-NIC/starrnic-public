@@ -28,4 +28,6 @@ source axis_switch_combiner_tdest.tcl
 source axis_switch_splitter_axilite.tcl
 
 read_verilog -quiet -sv stream_switch_dfx.sv
-source pkt_size_counter/build_rm.tcl
+if {!$pr} {
+    source pkt_size_counter/build_rm.tcl
+}
