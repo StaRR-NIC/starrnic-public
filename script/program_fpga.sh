@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# Works for au280 and u50
 sudo rmmod onic.ko
 
 if [[ $# -ne 2 ]] || [[ -z EXTENDED_DEVICE_BDF1 ]] || [[ -z $XILINX_VIVADO ]]; then

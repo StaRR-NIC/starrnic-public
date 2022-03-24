@@ -1,9 +1,10 @@
 #!/bin/bash
 
+# Works for au280 and u50
 # The addresses in this script and logic is specific to the stream-switch design
 
-if [ $# -eq 0 ] || [[ -z $XILINX_VIVADO ]] || [[ -z $PCIMEM ]] || [[ -z $EXTENDED_DEVICE_BDF1 ]] || [[ -z $STARRNIC_SHELL ]]; then
-    echo "Usage: replace_pr.sh PARTIAL_BITSTREAM"
+if [[ $# -ne 2 ]] || [[ -z $XILINX_VIVADO ]] || [[ -z $PCIMEM ]] || [[ -z $EXTENDED_DEVICE_BDF1 ]] || [[ -z $STARRNIC_SHELL ]]; then
+    echo "Usage: replace_pr.sh PARTIAL_BITSTREAM BOARD"
     echo "Please export PCIMEM to point to pcimem binary."
     echo "Please export STARRNIC_SHELL as path to starrnic_shell."
     echo "Please export EXTENDED_DEVICE_BDF1 to point to the FPGA NIC."
@@ -15,6 +16,7 @@ set -Eeuo pipefail
 set -x
 
 partial_bitstream=$1
+board=$2
 
 bypass_region () {
     echo "Bypassing..."
@@ -56,7 +58,7 @@ read_counter_value # (should be arbit value)
 # Reconfigure
 echo "Reconfiguring using $partial_bitstream..."
 vivado -mode tcl -source $STARRNIC_SHELL/script/program_fpga.tcl \
-    -tclargs -board $BOARD \
+    -tclargs -board $board \
     -bitstream_path $partial_bitstream
 
 # move packets back to region
