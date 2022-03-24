@@ -15,6 +15,16 @@
 # limitations under the License.
 #
 # *************************************************************************
+
+# Vivado version check
+set VIVADO_VERSION "2021.2"
+set VIVADO_VERSION_YEAR "2021"
+if {![string equal [version -short] $VIVADO_VERSION]} {
+    puts "OpenNIC shell requires Vivado version $VIVADO_VERSION"
+    puts "To use another version change flow 'Vivado Implementation 2021' to desired flow version in all tcl scripts."
+    exit
+}
+
 proc _do_impl {jobs {strategies ""}} {
     if {![llength $strategies]} {
         launch_runs impl_1 -to_step write_bitstream -jobs $jobs
@@ -25,7 +35,7 @@ proc _do_impl {jobs {strategies ""}} {
         for {set i 1} {$i < [llength $strategies]} {incr i 1} {
             set r impl_[expr $i + 1]
             set s [lindex $strategies $i]
-            create_run $r -flow {Vivado Implementation 2021} -parent_run synth_1 -strategy "$s"
+            create_run $r -flow {Vivado Implementation ${VIVADO_VERSION_YEAR}} -parent_run synth_1 -strategy "$s"
             lappend impl_runs $r
         }
         launch_runs $impl_runs -to_step write_bitstream -jobs $jobs
@@ -48,14 +58,6 @@ proc _do_post_impl {build_dir top impl_run {zynq_family 0}} {
         set mcs_file ${build_dir}/${top}.runs/${impl_run}/${top}.mcs
         write_cfgmem -format mcs -size 128 -interface $interface -loadbit "up $start_address $bit_file" -file "$mcs_file"
     }
-}
-
-# Vivado version check
-set VIVADO_VERSION "2021.2"
-if {![string equal [version -short] $VIVADO_VERSION]} {
-    puts "OpenNIC shell requires Vivado version $VIVADO_VERSION"
-    puts "To use another version change flow 'Vivado Implementation 2021' to desired flow version in all tcl scripts."
-    exit
 }
 
 # Directory variables
