@@ -1,9 +1,9 @@
 # Vivado version check
-set VIVADO_VERSION "2020.2"
-if {![string equal [version -short] $VIVADO_VERSION]} {
-    puts "OpenNIC shell requires Vivado version $VIVADO_VERSION"
-    exit
-}
+# set VIVADO_VERSION "2021.2"
+# if {![string equal [version -short] $VIVADO_VERSION]} {
+#     puts "OpenNIC shell requires Vivado version $VIVADO_VERSION"
+#     exit
+# }
 
 # Directory variables
 set root_dir [file normalize ..]

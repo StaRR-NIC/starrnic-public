@@ -1,30 +1,38 @@
 #!/bin/bash
 
+if [[ -z $PCIMEM ]] || [[ -z $OPEN_NIC_DRIVER ]] || [[ -z $EXTENDED_DEVICE_BDF1 ]] || [[ -z $STARRNIC_IP1 ]]; then
+    echo "Please export PCIMEM to point to pcimem binary."
+    echo "Please export OPEN_NIC_DRIVER as path to open_nic_driver."
+    echo "Please export EXTENDED_DEVICE_BDF to point to the FPGA NIC."
+    echo "Please set STARRNIC_IP1"
+    exit 1
+fi
+
+set -Eeuo pipefail
+set -x
+
 START_DIR=$PWD
-PCIMEM_PATH="/home/ubuntu/opt/pcimem"
-DRIVER_PATH="/home/ubuntu/Projects/StaRR-NIC/open-nic-driver"
 
-cd $DRIVER_PATH
+cd $OPEN_NIC_DRIVER
 sudo insmod onic.ko
-sudo ifconfig enp59s0 10.0.0.57/24 up
+sudo ifconfig enp59s0 $STARRNIC_IP1/24 up
 
-cd $PCIMEM_PATH
 # Read temperature
-sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x10400
+sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x10400
 
 # Read current splitter control register
-sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100000
+sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000
 
 # Use counter
-# sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100040 w 0x80000000
-# sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100044 w 0x00
-# sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100000 w 0x02
+# sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 w 0x80000000
+# sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 w 0x00
+# sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x02
 
 # Bypass
-sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100040 w 0x00
-sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100044 w 0x80000000
-sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x100000 w 0x02
+sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 w 0x00
+sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 w 0x80000000
+sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x02
 
-ping 10.0.0.61 -c 1
+ping 10.0.0.61 -c 1  # this is IP of Intel XL710 NIC. Since this is on switch, all devices can access this.
 
 cd $START_DIR

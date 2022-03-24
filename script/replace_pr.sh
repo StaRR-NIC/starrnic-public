@@ -2,10 +2,12 @@
 
 # The addresses in this script and logic is specific to the stream-switch design
 
-if [ $# -eq 0 ] || [[ $STARRNIC_SETUP != "true" ]] || [[ -z $XILINX_VIVADO ]]; then
+if [ $# -eq 0 ] || [[ -z $XILINX_VIVADO ]] || [[ -z $PCIMEM ]] || [[ -z $EXTENDED_DEVICE_BDF ]] || [[ -z $STARRNIC_SHELL ]]; then
     echo "Usage: replace_pr.sh PARTIAL_BITSTREAM"
-    echo "Need to have set STARRNIC_SETUP (includes DEVICE_BDF, EXTENDED_DEVICE_BDF, PCIMEM, STARRNIC_SHELL)"
-    echo "Need to have setup Vivado as well"
+    echo "Please export PCIMEM to point to pcimem binary."
+    echo "Please export STARRNIC_SHELL as path to starrnic_shell."
+    echo "Please export EXTENDED_DEVICE_BDF to point to the FPGA NIC."
+    echo "Please ensure vivado is in path."
     exit 1
 fi
 
