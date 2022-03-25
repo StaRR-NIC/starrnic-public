@@ -1,11 +1,11 @@
-wire [47:0] axis_qdma_h2c_tuser;
+// wire [47:0] axis_qdma_h2c_tuser;
 wire [47:0] axis_qdma_c2h_tuser;
 wire [47:0] axis_adap_tx_250mhz_tuser;
 wire [47:0] axis_adap_rx_250mhz_tuser;
 
-assign axis_qdma_h2c_tuser[0+:16]                       = s_axis_qdma_h2c_tuser_size[`getvec(16, intf_idx)];
-assign axis_qdma_h2c_tuser[16+:16]                      = s_axis_qdma_h2c_tuser_src[`getvec(16, intf_idx)];
-assign axis_qdma_h2c_tuser[32+:16]                      = s_axis_qdma_h2c_tuser_dst[`getvec(16, intf_idx)];
+// assign axis_qdma_h2c_tuser[0+:16]                       = s_axis_qdma_h2c_tuser_size[`getvec(16, intf_idx)];
+// assign axis_qdma_h2c_tuser[16+:16]                      = s_axis_qdma_h2c_tuser_src[`getvec(16, intf_idx)];
+// assign axis_qdma_h2c_tuser[32+:16]                      = s_axis_qdma_h2c_tuser_dst[`getvec(16, intf_idx)];
 
 assign axis_adap_rx_250mhz_tuser[0+:16]                 = s_axis_adap_rx_250mhz_tuser_size[`getvec(16, intf_idx)];
 assign axis_adap_rx_250mhz_tuser[16+:16]                = s_axis_adap_rx_250mhz_tuser_src[`getvec(16, intf_idx)];
@@ -134,12 +134,12 @@ axis_switch_splitter_axilite splitter_inst (
   .s_axi_ctrl_rdata   (axil_splitter_rdata[0+:32]),
   .s_axi_ctrl_rresp   (axil_splitter_rresp[0+:2]),
 
-  .s_axis_tready      (s_axis_qdma_h2c_tready[intf_idx]),
-  .s_axis_tvalid      (s_axis_qdma_h2c_tvalid[intf_idx]),
-  .s_axis_tdata       (s_axis_qdma_h2c_tdata[`getvec(512, intf_idx)]),
-  .s_axis_tkeep       (s_axis_qdma_h2c_tkeep[`getvec(64, intf_idx)]),
-  .s_axis_tlast       (s_axis_qdma_h2c_tlast[intf_idx]),
-  .s_axis_tuser       (axis_qdma_h2c_tuser),
+  .s_axis_tready      (axis_qdma_h2c_p0_tready),
+  .s_axis_tvalid      (axis_qdma_h2c_p0_tvalid),
+  .s_axis_tdata       (axis_qdma_h2c_p0_tdata),
+  .s_axis_tkeep       (axis_qdma_h2c_p0_tkeep),
+  .s_axis_tlast       (axis_qdma_h2c_p0_tlast),
+  .s_axis_tuser       (axis_qdma_h2c_p0_tuser),
 
   .m_axis_tready      (axis_splitter_tready),
   .m_axis_tvalid      (axis_splitter_tvalid),

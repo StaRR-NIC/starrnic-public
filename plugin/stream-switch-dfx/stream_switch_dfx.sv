@@ -104,6 +104,14 @@ module stream_switch_dfx #(
   assign axil_aresetn  = rst_bundle[0];
   assign axis_aresetn  = rst_bundle[1];
 
+  // Wire for carrying TX on port 0
+  wire     [1-1:0] axis_qdma_h2c_p0_tvalid;
+  wire [512*1-1:0] axis_qdma_h2c_p0_tdata;
+  wire  [64*1-1:0] axis_qdma_h2c_p0_tkeep;
+  wire     [1-1:0] axis_qdma_h2c_p0_tlast;
+  wire  [48*1-1:0] axis_qdma_h2c_p0_tuser;
+  wire     [1-1:0] axis_qdma_h2c_p0_tready;
+
   `include "stream_switch_address_map_inst.vh"
 
   // The PR Project Flow did not automatically support generate blocks in Vivado 2020.1.
@@ -122,7 +130,14 @@ module stream_switch_dfx #(
   // Remaining, interfaces 1 to NUM_INTF-1
   ////////////////////////////////////////////////////////////////////////////////
 
-  generate for (genvar i = 1; i < NUM_INTF; i++) begin
+  initial begin
+  if (NUM_INTF > 2) begin
+    $fatal("No implementation for NUM_INTF (%d) > 2", NUM_INTF);
+  end
+  end
+
+  generate if (NUM_INTF == 2) begin // for (genvar i = 1; i < NUM_INTF; i++) begin
+    localparam i = 1;
     wire [47:0] axis_qdma_h2c_tuser;
     wire [47:0] axis_qdma_c2h_tuser;
     wire [47:0] axis_adap_tx_250mhz_tuser;
@@ -163,24 +178,90 @@ module stream_switch_dfx #(
       .aresetn       (axil_aresetn)
     );
 
-    axi_stream_pipeline rx_ppl_inst (
-      .s_axis_tvalid (s_axis_adap_rx_250mhz_tvalid[i]),
-      .s_axis_tdata  (s_axis_adap_rx_250mhz_tdata[`getvec(512, i)]),
-      .s_axis_tkeep  (s_axis_adap_rx_250mhz_tkeep[`getvec(64, i)]),
-      .s_axis_tlast  (s_axis_adap_rx_250mhz_tlast[i]),
-      .s_axis_tuser  (axis_adap_rx_250mhz_tuser),
-      .s_axis_tready (s_axis_adap_rx_250mhz_tready[i]),
+    // Terminate C2H (don't send anything on RX to QDMA)
+    assign m_axis_qdma_c2h_tvalid[i]              = 1'b0;
+    assign m_axis_qdma_c2h_tdata[`getvec(512, i)] = 0;
+    assign m_axis_qdma_c2h_tkeep[`getvec(64, i)]  = 0;
+    assign m_axis_qdma_c2h_tlast[i]               = 1'b0;
+    assign axis_qdma_c2h_tuser                    = 0;
 
-      .m_axis_tvalid (m_axis_qdma_c2h_tvalid[i]),
-      .m_axis_tdata  (m_axis_qdma_c2h_tdata[`getvec(512, i)]),
-      .m_axis_tkeep  (m_axis_qdma_c2h_tkeep[`getvec(64, i)]),
-      .m_axis_tlast  (m_axis_qdma_c2h_tlast[i]),
-      .m_axis_tuser  (axis_qdma_c2h_tuser),
-      .m_axis_tready (m_axis_qdma_c2h_tready[i]),
+    // axi_stream_pipeline rx_ppl_inst (
+    //   .s_axis_tvalid (s_axis_adap_rx_250mhz_tvalid[i]),
+    //   .s_axis_tdata  (s_axis_adap_rx_250mhz_tdata[`getvec(512, i)]),
+    //   .s_axis_tkeep  (s_axis_adap_rx_250mhz_tkeep[`getvec(64, i)]),
+    //   .s_axis_tlast  (s_axis_adap_rx_250mhz_tlast[i]),
+    //   .s_axis_tuser  (axis_adap_rx_250mhz_tuser),
+    //   .s_axis_tready (s_axis_adap_rx_250mhz_tready[i]),
 
-      .aclk          (axis_aclk),
-      .aresetn       (axil_aresetn)
+    //   .m_axis_tvalid (m_axis_qdma_c2h_tvalid[i]),
+    //   .m_axis_tdata  (m_axis_qdma_c2h_tdata[`getvec(512, i)]),
+    //   .m_axis_tkeep  (m_axis_qdma_c2h_tkeep[`getvec(64, i)]),
+    //   .m_axis_tlast  (m_axis_qdma_c2h_tlast[i]),
+    //   .m_axis_tuser  (axis_qdma_c2h_tuser),
+    //   .m_axis_tready (m_axis_qdma_c2h_tready[i]),
+
+    //   .aclk          (axis_aclk),
+    //   .aresetn       (axil_aresetn)
+    // );
+
+    // Any traffic on CMAC1 RX should be diverted to CMAC0 TX.
+    localparam SPLIT_COMBINE_PORT_COUNT = 2;
+    wire     [SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tready;
+    wire     [SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tvalid;
+    wire [512*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tdata;
+    wire  [64*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tkeep;
+    wire     [SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tlast;
+    wire  [48*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tuser;
+    reg      [SPLIT_COMBINE_PORT_COUNT-1:0] combiner_decode_error;
+
+    // Combiner
+    assign s_axis_qdma_h2c_tready[0]       = axis_combiner_tready[0+:1];
+    assign axis_combiner_tvalid[0+:1]      = s_axis_qdma_h2c_tvalid[0];
+    assign axis_combiner_tdata[0+:512]     = s_axis_qdma_h2c_tdata[511:0];
+    assign axis_combiner_tkeep[0+:64]      = s_axis_qdma_h2c_tkeep[63:0];
+    assign axis_combiner_tlast[0+:1]       = s_axis_qdma_h2c_tlast[0];
+    assign axis_combiner_tuser[0+:16]      = s_axis_qdma_h2c_tuser_size[15:0];
+    assign axis_combiner_tuser[16+:16]     = s_axis_qdma_h2c_tuser_src[15:0];
+    assign axis_combiner_tuser[32+:16]     = s_axis_qdma_h2c_tuser_dst[15:0];
+
+    assign s_axis_adap_rx_250mhz_tready[i] = axis_combiner_tready[1+:1];
+    assign axis_combiner_tvalid[1+:1]      = s_axis_adap_rx_250mhz_tvalid[i];
+    assign axis_combiner_tdata[512+:512]   = s_axis_adap_rx_250mhz_tdata[`getvec(512, i)];
+    assign axis_combiner_tkeep[64+:64]     = s_axis_adap_rx_250mhz_tkeep[`getvec(64, i)];
+    assign axis_combiner_tlast[1+:1]       = s_axis_adap_rx_250mhz_tlast[i];
+    assign axis_combiner_tuser[48+:48]     = axis_adap_rx_250mhz_tuser;
+
+    axis_switch_combiner_tdest combiner_inst (
+      .aclk           (axis_aclk),
+      .aresetn        (axis_aresetn),
+
+      .s_axis_tready  (axis_combiner_tready),
+      .s_axis_tvalid  (axis_combiner_tvalid),
+      .s_axis_tdata   (axis_combiner_tdata),
+      .s_axis_tkeep   (axis_combiner_tkeep),
+      .s_axis_tlast   (axis_combiner_tlast),
+      .s_axis_tuser   (axis_combiner_tuser),
+
+      .m_axis_tvalid  (axis_qdma_h2c_p0_tvalid),
+      .m_axis_tdata   (axis_qdma_h2c_p0_tdata),
+      .m_axis_tkeep   (axis_qdma_h2c_p0_tkeep),
+      .m_axis_tlast   (axis_qdma_h2c_p0_tlast),
+      .m_axis_tuser   (axis_qdma_h2c_p0_tuser),
+      .m_axis_tready  (axis_qdma_h2c_p0_tready),
+
+      .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
+      .s_decode_err   (combiner_decode_error)
     );
+  end
+  else begin
+    assign s_axis_qdma_h2c_tready[0]      = axis_qdma_h2c_p0_tready[0+:1];
+    assign axis_qdma_h2c_p0_tvalid[0+:1]  = s_axis_qdma_h2c_tvalid[0];
+    assign axis_qdma_h2c_p0_tdata[0+:512] = s_axis_qdma_h2c_tdata[511:0];
+    assign axis_qdma_h2c_p0_tkeep[0+:64]  = s_axis_qdma_h2c_tkeep[63:0];
+    assign axis_qdma_h2c_p0_tlast[0+:1]   = s_axis_qdma_h2c_tlast[0];
+    assign axis_qdma_h2c_p0_tuser[0+:16]  = s_axis_qdma_h2c_tuser_size[15:0];
+    assign axis_qdma_h2c_p0_tuser[16+:16] = s_axis_qdma_h2c_tuser_src[15:0];
+    assign axis_qdma_h2c_p0_tuser[32+:16] = s_axis_qdma_h2c_tuser_dst[15:0];
   end
   endgenerate
 
