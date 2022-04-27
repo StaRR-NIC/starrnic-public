@@ -15,19 +15,22 @@ const bit<16> VLAN_TYPE = 0x8100;
 const bit<16> IPV4_TYPE = 0x0800;
 const bit<8>  UDP_PROT  = 0x11;
 
+// N3, port 0
 const bit<32> SRC_IP    = 0x0a000035;     // 10.0.0.53
 const bit<48> SRC_MAC   = 0x000a35bc7abc; // 00:0a:35:bc:7a:bc
 const bit<16> SRC_PORT0 = 16w62176;       // 62176
 const bit<16> SRC_PORT1 = 16w62177;       // 62177
 const bit<16> SRC_PORT2 = 16w62178;       // 62178
 
+// N5 port 1
 const bit<32> DST_IP1   = 0x0a00002d;     // 10.0.0.45
 const bit<16> DST_PORT1 = 16w60512;       // 60512
-const bit<48> DST_MAC1  = ;               //
+const bit<48> DST_MAC1  = 0x000a35029d2d; // 00:0a:35:02:9d:2d
 
+ // N5, port 0
 const bit<32> DST_IP2   = 0x0a00002f;     // 10.0.0.47
 const bit<16> DST_PORT2 = 16w60513;       // 60513
-const bit<48> DST_MAC2  = ;               //
+const bit<48> DST_MAC2  = 0x000a35029d2f; // 00:0a:35:02:9d:2f
 
 
 // ****************************************************************************** //
