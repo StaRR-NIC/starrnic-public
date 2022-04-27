@@ -32,6 +32,23 @@ wire [31:0] axil_combiner_rdata;
 wire  [1:0] axil_combiner_rresp;
 wire        axil_combiner_rready;
 
+wire        axil_p4hdr_awvalid;
+wire [31:0] axil_p4hdr_awaddr;
+wire        axil_p4hdr_awready;
+wire        axil_p4hdr_wvalid;
+wire [31:0] axil_p4hdr_wdata;
+wire        axil_p4hdr_wready;
+wire        axil_p4hdr_bvalid;
+wire  [1:0] axil_p4hdr_bresp;
+wire        axil_p4hdr_bready;
+wire        axil_p4hdr_arvalid;
+wire [31:0] axil_p4hdr_araddr;
+wire        axil_p4hdr_arready;
+wire        axil_p4hdr_rvalid;
+wire [31:0] axil_p4hdr_rdata;
+wire  [1:0] axil_p4hdr_rresp;
+wire        axil_p4hdr_rready;
+
 wire        axil_dp_awvalid;
 wire [31:0] axil_dp_awaddr;
 wire        axil_dp_awready;
@@ -100,6 +117,23 @@ stream_switch_address_map address_map_inst (
   .m_axil_combiner_rdata   (axil_combiner_rdata),
   .m_axil_combiner_rresp   (axil_combiner_rresp),
   .m_axil_combiner_rready  (axil_combiner_rready),
+
+  .m_axil_p4hdr_awvalid   (axil_p4hdr_awvalid),
+  .m_axil_p4hdr_awaddr    (axil_p4hdr_awaddr),
+  .m_axil_p4hdr_awready   (axil_p4hdr_awready),
+  .m_axil_p4hdr_wvalid    (axil_p4hdr_wvalid),
+  .m_axil_p4hdr_wdata     (axil_p4hdr_wdata),
+  .m_axil_p4hdr_wready    (axil_p4hdr_wready),
+  .m_axil_p4hdr_bvalid    (axil_p4hdr_bvalid),
+  .m_axil_p4hdr_bresp     (axil_p4hdr_bresp),
+  .m_axil_p4hdr_bready    (axil_p4hdr_bready),
+  .m_axil_p4hdr_arvalid   (axil_p4hdr_arvalid),
+  .m_axil_p4hdr_araddr    (axil_p4hdr_araddr),
+  .m_axil_p4hdr_arready   (axil_p4hdr_arready),
+  .m_axil_p4hdr_rvalid    (axil_p4hdr_rvalid),
+  .m_axil_p4hdr_rdata     (axil_p4hdr_rdata),
+  .m_axil_p4hdr_rresp     (axil_p4hdr_rresp),
+  .m_axil_p4hdr_rready    (axil_p4hdr_rready),
 
   .m_axil_dp_awvalid   (axil_dp_awvalid),
   .m_axil_dp_awaddr    (axil_dp_awaddr),

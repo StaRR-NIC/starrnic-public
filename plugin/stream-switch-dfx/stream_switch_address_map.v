@@ -12,6 +12,8 @@
 // --------------------------------------------------
 //   0x01000   |  0x01FFF   |  Switch combiner (12 bits)
 // --------------------------------------------------
+//   0x02000   |  0x02FFF   |  P4 hdr (12 bits)
+// --------------------------------------------------
 //   0x40000   |  0x7FFFF   |  Control path (connected to p2p or dp) (18 bits)
 // --------------------------------------------------
 
@@ -36,7 +38,7 @@ module stream_switch_address_map (
   output [31:0] s_axil_rdata,
   output  [1:0] s_axil_rresp,
   input         s_axil_rready,
-  
+
   output        m_axil_splitter_awvalid,
   output [31:0] m_axil_splitter_awaddr,
   input         m_axil_splitter_awready,
@@ -88,25 +90,45 @@ module stream_switch_address_map (
   input   [1:0] m_axil_dp_rresp,
   output        m_axil_dp_rready,
 
+  output        m_axil_p4hdr_awvalid,
+  output [31:0] m_axil_p4hdr_awaddr,
+  input         m_axil_p4hdr_awready,
+  output        m_axil_p4hdr_wvalid,
+  output [31:0] m_axil_p4hdr_wdata,
+  input         m_axil_p4hdr_wready,
+  input         m_axil_p4hdr_bvalid,
+  input   [1:0] m_axil_p4hdr_bresp,
+  output        m_axil_p4hdr_bready,
+  output        m_axil_p4hdr_arvalid,
+  output [31:0] m_axil_p4hdr_araddr,
+  input         m_axil_p4hdr_arready,
+  input         m_axil_p4hdr_rvalid,
+  input  [31:0] m_axil_p4hdr_rdata,
+  input   [1:0] m_axil_p4hdr_rresp,
+  output        m_axil_p4hdr_rready,
 
   input         aclk,
   input         aresetn
 );
 
-  localparam C_NUM_SLAVES  = 3;
+  localparam C_NUM_SLAVES  = 4;
 
   localparam C_SPLITTER_INDEX   = 0;
   localparam C_COMBINER_INDEX = 1;
-  localparam C_DP_INDEX = 2;
+  localparam C_P4HDR_INDEX = 2;
+  localparam C_DP_INDEX = 3;
 
   localparam C_SPLITTER_BASE_ADDR   = 32'h0;
   localparam C_COMBINER_BASE_ADDR = 32'h1000;
+  localparam C_P4HDR_BASE_ADDR = 32'h2000;
   localparam C_DP_BASE_ADDR = 32'h40000;
 
   wire                  [31:0] axil_splitter_awaddr;
   wire                  [31:0] axil_splitter_araddr;
   wire                  [31:0] axil_combiner_awaddr;
   wire                  [31:0] axil_combiner_araddr;
+  wire                  [31:0] axil_p4hdr_awaddr;
+  wire                  [31:0] axil_p4hdr_araddr;
   wire                  [31:0] axil_dp_awaddr;
   wire                  [31:0] axil_dp_araddr;
 
@@ -128,29 +150,31 @@ module stream_switch_address_map (
   wire  [(1*C_NUM_SLAVES)-1:0] axil_rready;
 
   // Adjust AXI-Lite address so that each slave can assume a base address of 0x0
-  assign axil_splitter_awaddr                    = axil_awaddr[C_SPLITTER_INDEX*32 +: 32] - C_SPLITTER_BASE_ADDR;
-  assign axil_splitter_araddr                    = axil_araddr[C_SPLITTER_INDEX*32 +: 32] - C_SPLITTER_BASE_ADDR;
-  assign axil_combiner_awaddr                    = axil_awaddr[C_COMBINER_INDEX*32 +: 32] - C_COMBINER_BASE_ADDR;
-  assign axil_combiner_araddr                    = axil_araddr[C_COMBINER_INDEX*32 +: 32] - C_COMBINER_BASE_ADDR;
-  assign axil_dp_awaddr                          = axil_awaddr[C_DP_INDEX*32 +: 32] - C_DP_BASE_ADDR;
-  assign axil_dp_araddr                          = axil_araddr[C_DP_INDEX*32 +: 32] - C_DP_BASE_ADDR;
+  assign axil_splitter_awaddr                  = axil_awaddr[C_SPLITTER_INDEX*32 +: 32] - C_SPLITTER_BASE_ADDR;
+  assign axil_splitter_araddr                  = axil_araddr[C_SPLITTER_INDEX*32 +: 32] - C_SPLITTER_BASE_ADDR;
+  assign axil_combiner_awaddr                  = axil_awaddr[C_COMBINER_INDEX*32 +: 32] - C_COMBINER_BASE_ADDR;
+  assign axil_combiner_araddr                  = axil_araddr[C_COMBINER_INDEX*32 +: 32] - C_COMBINER_BASE_ADDR;
+  assign axil_p4hdr_awaddr                     = axil_awaddr[C_P4HDR_INDEX*32 +: 32] - C_P4HDR_BASE_ADDR;
+  assign axil_p4hdr_araddr                     = axil_araddr[C_P4HDR_INDEX*32 +: 32] - C_P4HDR_BASE_ADDR;
+  assign axil_dp_awaddr                        = axil_awaddr[C_DP_INDEX*32 +: 32] - C_DP_BASE_ADDR;
+  assign axil_dp_araddr                        = axil_araddr[C_DP_INDEX*32 +: 32] - C_DP_BASE_ADDR;
 
-  assign m_axil_splitter_awvalid                 = axil_awvalid[C_SPLITTER_INDEX];
-  assign m_axil_splitter_awaddr                  = axil_splitter_awaddr;
-  assign axil_awready[C_SPLITTER_INDEX]          = m_axil_splitter_awready;
-  assign m_axil_splitter_wvalid                  = axil_wvalid[C_SPLITTER_INDEX];
-  assign m_axil_splitter_wdata                   = axil_wdata[C_SPLITTER_INDEX*32 +: 32];
-  assign axil_wready[C_SPLITTER_INDEX]           = m_axil_splitter_wready;
-  assign axil_bvalid[C_SPLITTER_INDEX]           = m_axil_splitter_bvalid;
-  assign axil_bresp[C_SPLITTER_INDEX*2 +: 2]     = m_axil_splitter_bresp;
-  assign m_axil_splitter_bready                  = axil_bready[C_SPLITTER_INDEX];
-  assign m_axil_splitter_arvalid                 = axil_arvalid[C_SPLITTER_INDEX];
-  assign m_axil_splitter_araddr                  = axil_splitter_araddr;
-  assign axil_arready[C_SPLITTER_INDEX]          = m_axil_splitter_arready;
-  assign axil_rvalid[C_SPLITTER_INDEX]           = m_axil_splitter_rvalid;
-  assign axil_rdata[C_SPLITTER_INDEX*32 +: 32]   = m_axil_splitter_rdata;
-  assign axil_rresp[C_SPLITTER_INDEX*2 +: 2]     = m_axil_splitter_rresp;
-  assign m_axil_splitter_rready                  = axil_rready[C_SPLITTER_INDEX];
+  assign m_axil_splitter_awvalid               = axil_awvalid[C_SPLITTER_INDEX];
+  assign m_axil_splitter_awaddr                = axil_splitter_awaddr;
+  assign axil_awready[C_SPLITTER_INDEX]        = m_axil_splitter_awready;
+  assign m_axil_splitter_wvalid                = axil_wvalid[C_SPLITTER_INDEX];
+  assign m_axil_splitter_wdata                 = axil_wdata[C_SPLITTER_INDEX*32 +: 32];
+  assign axil_wready[C_SPLITTER_INDEX]         = m_axil_splitter_wready;
+  assign axil_bvalid[C_SPLITTER_INDEX]         = m_axil_splitter_bvalid;
+  assign axil_bresp[C_SPLITTER_INDEX*2 +: 2]   = m_axil_splitter_bresp;
+  assign m_axil_splitter_bready                = axil_bready[C_SPLITTER_INDEX];
+  assign m_axil_splitter_arvalid               = axil_arvalid[C_SPLITTER_INDEX];
+  assign m_axil_splitter_araddr                = axil_splitter_araddr;
+  assign axil_arready[C_SPLITTER_INDEX]        = m_axil_splitter_arready;
+  assign axil_rvalid[C_SPLITTER_INDEX]         = m_axil_splitter_rvalid;
+  assign axil_rdata[C_SPLITTER_INDEX*32 +: 32] = m_axil_splitter_rdata;
+  assign axil_rresp[C_SPLITTER_INDEX*2 +: 2]   = m_axil_splitter_rresp;
+  assign m_axil_splitter_rready                = axil_rready[C_SPLITTER_INDEX];
 
   assign m_axil_combiner_awvalid               = axil_awvalid[C_COMBINER_INDEX];
   assign m_axil_combiner_awaddr                = axil_combiner_awaddr;
@@ -169,22 +193,39 @@ module stream_switch_address_map (
   assign axil_rresp[C_COMBINER_INDEX* 2 +: 2]  = m_axil_combiner_rresp;
   assign m_axil_combiner_rready                = axil_rready[C_COMBINER_INDEX];
 
-  assign m_axil_dp_awvalid               = axil_awvalid[C_DP_INDEX];
-  assign m_axil_dp_awaddr                = axil_dp_awaddr;
-  assign axil_awready[C_DP_INDEX]        = m_axil_dp_awready;
-  assign m_axil_dp_wvalid                = axil_wvalid[C_DP_INDEX];
-  assign m_axil_dp_wdata                 = axil_wdata[C_DP_INDEX*32 +: 32];
-  assign axil_wready[C_DP_INDEX]         = m_axil_dp_wready;
-  assign axil_bvalid[C_DP_INDEX]         = m_axil_dp_bvalid;
-  assign axil_bresp[C_DP_INDEX*2 +: 2]   = m_axil_dp_bresp;
-  assign m_axil_dp_bready                = axil_bready[C_DP_INDEX];
-  assign m_axil_dp_arvalid               = axil_arvalid[C_DP_INDEX];
-  assign m_axil_dp_araddr                = axil_dp_araddr;
-  assign axil_arready[C_DP_INDEX]        = m_axil_dp_arready;
-  assign axil_rvalid[C_DP_INDEX]         = m_axil_dp_rvalid;
-  assign axil_rdata[C_DP_INDEX*32 +: 32] = m_axil_dp_rdata;
-  assign axil_rresp[C_DP_INDEX* 2 +: 2]  = m_axil_dp_rresp;
-  assign m_axil_dp_rready                = axil_rready[C_DP_INDEX];
+  assign m_axil_p4hdr_awvalid                  = axil_awvalid[C_P4HDR_INDEX];
+  assign m_axil_p4hdr_awaddr                   = axil_p4hdr_awaddr;
+  assign axil_awready[C_P4HDR_INDEX]           = m_axil_p4hdr_awready;
+  assign m_axil_p4hdr_wvalid                   = axil_wvalid[C_P4HDR_INDEX];
+  assign m_axil_p4hdr_wdata                    = axil_wdata[C_P4HDR_INDEX*32 +: 32];
+  assign axil_wready[C_P4HDR_INDEX]            = m_axil_p4hdr_wready;
+  assign axil_bvalid[C_P4HDR_INDEX]            = m_axil_p4hdr_bvalid;
+  assign axil_bresp[C_P4HDR_INDEX*2 +: 2]      = m_axil_p4hdr_bresp;
+  assign m_axil_p4hdr_bready                   = axil_bready[C_P4HDR_INDEX];
+  assign m_axil_p4hdr_arvalid                  = axil_arvalid[C_P4HDR_INDEX];
+  assign m_axil_p4hdr_araddr                   = axil_p4hdr_araddr;
+  assign axil_arready[C_P4HDR_INDEX]           = m_axil_p4hdr_arready;
+  assign axil_rvalid[C_P4HDR_INDEX]            = m_axil_p4hdr_rvalid;
+  assign axil_rdata[C_P4HDR_INDEX*32 +: 32]    = m_axil_p4hdr_rdata;
+  assign axil_rresp[C_P4HDR_INDEX* 2 +: 2]     = m_axil_p4hdr_rresp;
+  assign m_axil_p4hdr_rready                   = axil_rready[C_P4HDR_INDEX];
+
+  assign m_axil_dp_awvalid                     = axil_awvalid[C_DP_INDEX];
+  assign m_axil_dp_awaddr                      = axil_dp_awaddr;
+  assign axil_awready[C_DP_INDEX]              = m_axil_dp_awready;
+  assign m_axil_dp_wvalid                      = axil_wvalid[C_DP_INDEX];
+  assign m_axil_dp_wdata                       = axil_wdata[C_DP_INDEX*32 +: 32];
+  assign axil_wready[C_DP_INDEX]               = m_axil_dp_wready;
+  assign axil_bvalid[C_DP_INDEX]               = m_axil_dp_bvalid;
+  assign axil_bresp[C_DP_INDEX*2 +: 2]         = m_axil_dp_bresp;
+  assign m_axil_dp_bready                      = axil_bready[C_DP_INDEX];
+  assign m_axil_dp_arvalid                     = axil_arvalid[C_DP_INDEX];
+  assign m_axil_dp_araddr                      = axil_dp_araddr;
+  assign axil_arready[C_DP_INDEX]              = m_axil_dp_arready;
+  assign axil_rvalid[C_DP_INDEX]               = m_axil_dp_rvalid;
+  assign axil_rdata[C_DP_INDEX*32 +: 32]       = m_axil_dp_rdata;
+  assign axil_rresp[C_DP_INDEX* 2 +: 2]        = m_axil_dp_rresp;
+  assign m_axil_dp_rready                      = axil_rready[C_DP_INDEX];
 
   stream_switch_axi_crossbar xbar_inst (
     .s_axi_awaddr  (s_axil_awaddr),
