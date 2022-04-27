@@ -181,21 +181,21 @@ control MyProcessing(inout headers hdr,
 
     action echo_hard1() {
         hdr.eth.smac = SRC_MAC;
-        hdr.eth.ipv4.src = SRC_IP;
+        hdr.ipv4.src = SRC_IP;
         hdr.udp.src_port = SRC_PORT1;
 
         hdr.eth.dmac = DST_MAC1;
-        hdr.eth.ipv4.dst = DST_IP1;
+        hdr.ipv4.dst = DST_IP1;
         hdr.udp.dst_port = DST_PORT1;
     }
 
     action echo_hard2() {
         hdr.eth.smac = SRC_MAC;
-        hdr.eth.ipv4.src = SRC_IP;
+        hdr.ipv4.src = SRC_IP;
         hdr.udp.src_port = SRC_PORT2;
 
         hdr.eth.dmac = DST_MAC2;
-        hdr.eth.ipv4.dst = DST_IP2;
+        hdr.ipv4.dst = DST_IP2;
         hdr.udp.dst_port = DST_PORT2;
     }
     
@@ -211,7 +211,7 @@ control MyProcessing(inout headers hdr,
                 echo_packet();
             }
             else if (hdr.udp.dst_port == SRC_PORT1) {
-                echo_hard1()
+                echo_hard1();
             }
             else if (hdr.udp.dst_port == SRC_PORT2) {
                 echo_hard2();
