@@ -1,0 +1,4 @@
+# The behavior model tool automatically appends _in.pcap to the file name
+run_traffic ./traffic
+
+exit
