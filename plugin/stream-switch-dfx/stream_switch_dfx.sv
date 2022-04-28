@@ -284,11 +284,11 @@ module stream_switch_dfx #(
     assign axis_combiner_tuser[16+:16]     = s_axis_qdma_h2c_tuser_src[15:0];
     assign axis_combiner_tuser[32+:16]     = s_axis_qdma_h2c_tuser_dst[15:0];
 
-    assign axis_p4hdrout_tready[i]         = axis_combiner_tready[1+:1];
-    assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid[i];
-    assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata[`getvec(512, i)];
-    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, i)];
-    assign axis_combiner_tlast[1+:1]       = axis_p4hdrout_tlast[i];
+    assign axis_p4hdrout_tready[0]         = axis_combiner_tready[1+:1];
+    assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid[0];
+    assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata[`getvec(512, 0)];
+    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)];
+    assign axis_combiner_tlast[1+:1]       = axis_p4hdrout_tlast[0];
     assign axis_combiner_tuser[48+:48]     = axis_p4hdrout_tuser;
 
     axis_switch_combiner_tdest combiner_inst (
