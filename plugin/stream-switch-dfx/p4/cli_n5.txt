@@ -1,0 +1,5 @@
+# run traffic
+run_traffic ./n5
+
+# end
+exit
