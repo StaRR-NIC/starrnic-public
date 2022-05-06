@@ -93,7 +93,7 @@ struct headers {
 struct metadata {
 }
 
-// User-defined errors 
+// User-defined errors
 error {
     InvalidIPpacket
 }
@@ -102,40 +102,40 @@ error {
 // *************************** P A R S E R  ************************************* //
 // ****************************************************************************** //
 
-parser MyParser(packet_in packet, 
-                out headers hdr, 
-                inout metadata meta, 
+parser MyParser(packet_in packet,
+                out headers hdr,
+                inout metadata meta,
                 inout standard_metadata_t smeta) {
-    
+
     state start {
         transition parse_eth;
     }
-    
+
     state parse_eth {
         packet.extract(hdr.eth);
         transition select(hdr.eth.type) {
             VLAN_TYPE : parse_vlan;
             IPV4_TYPE : parse_ipv4;
-            default   : accept; 
+            default   : accept;
         }
     }
-    
+
     state parse_vlan {
         packet.extract(hdr.vlan.next);
         transition select(hdr.vlan.last.tpid) {
             VLAN_TYPE : parse_vlan;
             IPV4_TYPE : parse_ipv4;
-            default   : accept; 
+            default   : accept;
         }
     }
-    
+
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         verify(hdr.ipv4.version == 4 && hdr.ipv4.hdr_len >= 5, error.InvalidIPpacket);
         packet.extract(hdr.ipv4opt, (((bit<32>)hdr.ipv4.hdr_len - 5) * 32));
         transition select(hdr.ipv4.protocol) {
             UDP_PROT  : parse_udp;
-            default   : accept; 
+            default   : accept;
         }
     }
 
@@ -149,8 +149,8 @@ parser MyParser(packet_in packet,
 // **************************  P R O C E S S I N G   **************************** //
 // ****************************************************************************** //
 
-control MyProcessing(inout headers hdr, 
-                     inout metadata meta, 
+control MyProcessing(inout headers hdr,
+                     inout metadata meta,
                      inout standard_metadata_t smeta) {
 
     MacAddr  tmp_eth_addr;
@@ -160,19 +160,19 @@ control MyProcessing(inout headers hdr,
     action dropPacket() {
         smeta.drop = 1;
     }
-    
+
     action swap_eth_address() {
         tmp_eth_addr = hdr.eth.dmac;
         hdr.eth.dmac = hdr.eth.smac;
         hdr.eth.smac = tmp_eth_addr;
     }
-    
+
     action swap_ip_address() {
         tmp_ip_addr  = hdr.ipv4.dst;
         hdr.ipv4.dst = hdr.ipv4.src;
         hdr.ipv4.src = tmp_ip_addr;
     }
-    
+
     action swap_udp_address() {
         tmp_udp_port     = hdr.udp.dst_port;
         hdr.udp.dst_port = hdr.udp.src_port;
@@ -198,11 +198,11 @@ control MyProcessing(inout headers hdr,
         hdr.ipv4.dst = DST_IP2;
         hdr.udp.dst_port = DST_PORT2;
     }
-    
+
     action echo_packet() {
         swap_eth_address();
         swap_ip_address();
-        swap_udp_address();  
+        swap_udp_address();
     }
 
     apply {
@@ -219,20 +219,20 @@ control MyProcessing(inout headers hdr,
             else {
                 dropPacket();
             }
-        } 
+        }
         else {
             dropPacket();
         }
     }
-} 
+}
 
 // ****************************************************************************** //
 // ***************************  D E P A R S E R  ******************************** //
 // ****************************************************************************** //
 
-control MyDeparser(packet_out packet, 
+control MyDeparser(packet_out packet,
                    in headers hdr,
-                   inout metadata meta, 
+                   inout metadata meta,
                    inout standard_metadata_t smeta) {
     apply {
         packet.emit(hdr.eth);
@@ -248,7 +248,7 @@ control MyDeparser(packet_out packet,
 // ****************************************************************************** //
 
 XilinxPipeline(
-    MyParser(), 
-    MyProcessing(), 
+    MyParser(),
+    MyProcessing(),
     MyDeparser()
 ) main;
