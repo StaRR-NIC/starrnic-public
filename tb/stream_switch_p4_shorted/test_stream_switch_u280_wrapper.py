@@ -10,8 +10,38 @@ from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
 
 from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
 
-my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'01'*16)
-# my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62178) / (b'01'*16)
+my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'\x01'*16)
+my_packet2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\x01'*16)
+my_packet3 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62178) / (b'01'*16)
+
+"""
+Eth:
+dmac: 00 0a 35 bc 7a bc
+smac: ff 0a 35 bc 7a bc
+type: 08 00
+
+IP:
+version: 4
+hdr_len: 5
+tos: 00
+len: 00 3c
+id: 00 01
+flags, offset: 00 00
+ttl: 40
+proto: 11
+chksum: 66 54
+src: 0a 00 00 28
+dst: 0a 00 00 35
+
+UDP:
+src_port: 00 6f
+dst_port: f2 e0
+length: 00 18
+chksum: f0 09
+
+Payload: 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01 01
+"""
+
 
 class TB:
     def __init__(self, dut):
@@ -72,7 +102,7 @@ class TB:
         # await RisingEdge(self.dut.axil_aclk)
 
 
-async def check_connection(tb, source, sink):
+async def check_connection(tb, source, sink, my_packet=my_packet):
     # Pkts on source should arrive at sink
     test_frames = []
     # test_frame = AxiStreamFrame(b'101010101')
@@ -126,6 +156,8 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     # Packets recvd on wire on port 1 should be sent to tx on port 0
     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0])
+    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet2)
+    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)
