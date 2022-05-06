@@ -8,9 +8,10 @@ from cocotb.triggers import RisingEdge
 from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
                            AxiStreamFrame, AxiStreamSink, AxiStreamSource)
 
-from scapy.all import Ether, IP, UDP, wrpcap, raw
+from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
 
-my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / "Hello world!"
+my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'01'*16)
+# my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62178) / (b'01'*16)
 
 class TB:
     def __init__(self, dut):
@@ -75,6 +76,8 @@ async def check_connection(tb, source, sink):
     # Pkts on source should arrive at sink
     test_frames = []
     # test_frame = AxiStreamFrame(b'101010101')
+    # pkt_bytearray = bytearray(bytes(my_packet))
+    # pkt_bytearray.reverse()
     test_frame = AxiStreamFrame(bytes(my_packet))
     await source.send(test_frame)
     test_frames.append(test_frame)
