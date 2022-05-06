@@ -289,8 +289,8 @@ module stream_switch_dfx #(
     assign axis_combiner_tuser[16+:16]     = s_axis_qdma_h2c_tuser_src[15:0];
     assign axis_combiner_tuser[32+:16]     = s_axis_qdma_h2c_tuser_dst[15:0];
 
-    // wire [63:0] keep_pkt;
-    // assign keep_pkt = {63{user_metadata_out_valid && ~drop_pkt}};
+    wire [63:0] keep_pkt;
+    assign keep_pkt = {63{user_metadata_out_valid && ~drop_pkt}};
     assign axis_p4hdrout_tready[0]         = axis_combiner_tready[1+:1];
     assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid[0];
     assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata[`getvec(512, 0)];

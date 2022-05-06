@@ -108,10 +108,10 @@ async def check_connection(tb, source, sink, my_packet=my_packet):
     # test_frame = AxiStreamFrame(b'101010101')
     # pkt_bytearray = bytearray(bytes(my_packet))
     # pkt_bytearray.reverse()
-    test_frame = AxiStreamFrame(bytes(my_packet))
+    test_frame = AxiStreamFrame(bytes(my_packet), tuser=b'\x00'*64 + b'0b0')
     await source.send(test_frame)
     test_frames.append(test_frame)
-    tb.log.info("Frames sent")
+    # tb.log.info("Frames sent")
 
     for test_frame in test_frames:
         tb.log.info("Trying to recv frames")
@@ -123,20 +123,20 @@ async def check_connection(tb, source, sink, my_packet=my_packet):
 
 async def check_drop(tb, source, sink, drop_pkt, my_packet=my_packet):
     # This should be dropped
-    test_frame = AxiStreamFrame(bytes(drop_pkt))
+    test_frame = AxiStreamFrame(bytes(drop_pkt), tuser=b'\x00'*64 + b'0b0')
     await source.send(test_frame)
+    tb.log.info("Trying to recv frames")
+    rx_frame = await sink.recv()
+    assert rx_frame.tdata == b''
 
     # This should not be dropped
-    test_frames = []
-    test_frame = AxiStreamFrame(bytes(my_packet))
+    test_frame = AxiStreamFrame(bytes(my_packet), tuser=b'\x00'*64 + b'0b0')
     await source.send(test_frame)
-    test_frames.append(test_frame)
-    tb.log.info("Frames sent")
+    # tb.log.info("Frames sent")
 
-    for test_frame in test_frames:
-        tb.log.info("Trying to recv frames")
-        rx_frame = await sink.recv()
-        assert rx_frame.tdata == test_frame.tdata
+    tb.log.info("Trying to recv frames")
+    rx_frame = await sink.recv()
+    assert rx_frame.tdata == test_frame.tdata
 
     assert sink.empty()
 
@@ -171,13 +171,18 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await tb.control.read(0x0040 + base, 4)  # check configuration
 
     # Should be able to send/recv on port 0
+    tb.log.info("Checking port 0")
     await check_connection(tb, tb.source_tx[0], tb.sink_tx[0])
     await check_connection(tb, tb.source_rx[0], tb.sink_rx[0])
 
     # Packets recvd on wire on port 1 should be sent to tx on port 0
+    tb.log.info("Checking port 1 with UDP 0")
     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0])
+    tb.log.info("Checking port 1 with UDP 1")
     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet2)
-    await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+    tb.log.info("Checking port 1 with TCP")
+    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+    # await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)
