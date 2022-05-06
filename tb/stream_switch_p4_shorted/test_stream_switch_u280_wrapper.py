@@ -8,6 +8,9 @@ from cocotb.triggers import RisingEdge
 from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
                            AxiStreamFrame, AxiStreamSink, AxiStreamSource)
 
+from scapy.all import Ether, IP, UDP, wrpcap, raw
+
+my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / "Hello world!"
 
 class TB:
     def __init__(self, dut):
@@ -23,26 +26,26 @@ class TB:
         self.source_tx = [AxiStreamSource(
             AxiStreamBus.from_prefix(
                 dut, "s_axis_qdma_h2c_port{}".format(port)),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
             for port in [0, 1]]
         self.source_rx = [AxiStreamSource(
             AxiStreamBus.from_prefix(
                 dut, "s_axis_adap_rx_250mhz_port{}".format(port)),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
             for port in [0, 1]]
         self.sink_tx = [AxiStreamSink(
             AxiStreamBus.from_prefix(
                 dut, "m_axis_adap_tx_250mhz_port{}".format(port)),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
             for port in [0, 1]]
         self.sink_rx = [AxiStreamSink(
             AxiStreamBus.from_prefix(
                 dut, "m_axis_qdma_c2h_port{}".format(port)),
-            dut.axis_aclk, dut.axis_aresetn, reset_active_level=False)
+            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
             for port in [0, 1]]
         self.control = AxiLiteMaster(
             AxiLiteBus.from_prefix(dut, "s_axil"),
-            dut.axil_aclk, dut.axil_aresetn, reset_active_level=False)
+            dut.axil_aclk, dut.stream_switch_dfx_inst.axil_aresetn, reset_active_level=False)
 
     def set_idle_generator(self, generator=None):
         if generator:
@@ -71,7 +74,8 @@ class TB:
 async def check_connection(tb, source, sink):
     # Pkts on source should arrive at sink
     test_frames = []
-    test_frame = AxiStreamFrame(b'101010101')
+    # test_frame = AxiStreamFrame(b'101010101')
+    test_frame = AxiStreamFrame(bytes(my_packet))
     await source.send(test_frame)
     test_frames.append(test_frame)
     tb.log.info("Frames sent")
