@@ -91,6 +91,9 @@ struct headers {
 
 // User metadata structure
 struct metadata {
+    bit<2> is_same;
+    bit<2> is_udp;
+    bit<1> drop;
 }
 
 // User-defined errors
@@ -153,76 +156,99 @@ control MyProcessing(inout headers hdr,
                      inout metadata meta,
                      inout standard_metadata_t smeta) {
 
-    MacAddr  tmp_eth_addr;
-    IPv4Addr tmp_ip_addr;
-    UdpPort  tmp_udp_port;
+    // MacAddr  tmp_eth_addr;
+    // IPv4Addr tmp_ip_addr;
+    // UdpPort  tmp_udp_port;
 
-    action dropPacket() {
-        smeta.drop = 1;
+    // action dropPacket() {
+    //     smeta.drop = 1;
+    // }
+
+    // action swap_eth_address() {
+    //     tmp_eth_addr = hdr.eth.dmac;
+    //     hdr.eth.dmac = hdr.eth.smac;
+    //     hdr.eth.smac = tmp_eth_addr;
+    // }
+
+    // action swap_ip_address() {
+    //     tmp_ip_addr  = hdr.ipv4.dst;
+    //     hdr.ipv4.dst = hdr.ipv4.src;
+    //     hdr.ipv4.src = tmp_ip_addr;
+    // }
+
+    // action swap_udp_address() {
+    //     tmp_udp_port     = hdr.udp.dst_port;
+    //     hdr.udp.dst_port = hdr.udp.src_port;
+    //     hdr.udp.src_port = tmp_udp_port;
+    // }
+
+    // action echo_hard1() {
+    //     hdr.eth.smac = SRC_MAC;
+    //     hdr.ipv4.src = SRC_IP;
+    //     hdr.udp.src_port = SRC_PORT1;
+
+    //     hdr.eth.dmac = DST_MAC1;
+    //     hdr.ipv4.dst = DST_IP1;
+    //     hdr.udp.dst_port = DST_PORT1;
+    // }
+
+    // action echo_hard2() {
+    //     hdr.eth.smac = SRC_MAC;
+    //     hdr.ipv4.src = SRC_IP;
+    //     hdr.udp.src_port = SRC_PORT2;
+
+    //     hdr.eth.dmac = DST_MAC2;
+    //     hdr.ipv4.dst = DST_IP2;
+    //     hdr.udp.dst_port = DST_PORT2;
+    // }
+
+    // action echo_packet() {
+    //     swap_eth_address();
+    //     swap_ip_address();
+    //     swap_udp_address();
+    // }
+
+    action same() {
+        meta.is_same = 0x1;
     }
 
-    action swap_eth_address() {
-        tmp_eth_addr = hdr.eth.dmac;
-        hdr.eth.dmac = hdr.eth.smac;
-        hdr.eth.smac = tmp_eth_addr;
-    }
-
-    action swap_ip_address() {
-        tmp_ip_addr  = hdr.ipv4.dst;
-        hdr.ipv4.dst = hdr.ipv4.src;
-        hdr.ipv4.src = tmp_ip_addr;
-    }
-
-    action swap_udp_address() {
-        tmp_udp_port     = hdr.udp.dst_port;
-        hdr.udp.dst_port = hdr.udp.src_port;
-        hdr.udp.src_port = tmp_udp_port;
-    }
-
-    action echo_hard1() {
-        hdr.eth.smac = SRC_MAC;
-        hdr.ipv4.src = SRC_IP;
-        hdr.udp.src_port = SRC_PORT1;
-
-        hdr.eth.dmac = DST_MAC1;
-        hdr.ipv4.dst = DST_IP1;
-        hdr.udp.dst_port = DST_PORT1;
-    }
-
-    action echo_hard2() {
-        hdr.eth.smac = SRC_MAC;
-        hdr.ipv4.src = SRC_IP;
-        hdr.udp.src_port = SRC_PORT2;
-
-        hdr.eth.dmac = DST_MAC2;
-        hdr.ipv4.dst = DST_IP2;
-        hdr.udp.dst_port = DST_PORT2;
-    }
-
-    action echo_packet() {
-        swap_eth_address();
-        swap_ip_address();
-        swap_udp_address();
+    action diff() {
+        meta.is_same = 0x2;
     }
 
     apply {
         if (hdr.udp.isValid()) {
-            if (hdr.udp.dst_port == SRC_PORT0) {
-                echo_packet();
-            }
-            else if (hdr.udp.dst_port == SRC_PORT1) {
-                echo_hard1();
-            }
-            else if (hdr.udp.dst_port == SRC_PORT2) {
-                echo_hard2();
+            meta.is_udp = 0x2;
+            // smeta.drop = 0;
+            meta.drop = 0;
+            if(hdr.udp.dst_port == SRC_PORT0) {
+                same();
             }
             else {
-                dropPacket();
+                diff();
             }
+        } else {
+            meta.is_udp = 0x1;
+            meta.drop = 1;
+            // smeta.drop = 1;
         }
-        else {
-            dropPacket();
-        }
+        // if (hdr.udp.isValid()) {
+        //     if (hdr.udp.dst_port == SRC_PORT0) {
+        //         echo_packet();
+        //     }
+        //     else if (hdr.udp.dst_port == SRC_PORT1) {
+        //         echo_hard1();
+        //     }
+        //     else if (hdr.udp.dst_port == SRC_PORT2) {
+        //         echo_hard2();
+        //     }
+        //     else {
+        //         // dropPacket();
+        //     }
+        // }
+        // else {
+        //     // dropPacket();
+        // }
     }
 }
 

@@ -10,9 +10,9 @@ from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
 
 from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
 
-my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'\x01'*16)
-my_packet2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\x01'*16)
-my_packet3 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62178) / (b'01'*16)
+my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'\xaa'*16)
+my_packet2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xbb'*16)
+my_packet3 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62178) / (b'\xcc'*16)
 
 """
 Eth:
@@ -121,6 +121,26 @@ async def check_connection(tb, source, sink, my_packet=my_packet):
     assert sink.empty()
 
 
+async def check_drop(tb, source, sink, drop_pkt, my_packet=my_packet):
+    # This should be dropped
+    test_frame = AxiStreamFrame(bytes(drop_pkt))
+    await source.send(test_frame)
+
+    # This should not be dropped
+    test_frames = []
+    test_frame = AxiStreamFrame(bytes(my_packet))
+    await source.send(test_frame)
+    test_frames.append(test_frame)
+    tb.log.info("Frames sent")
+
+    for test_frame in test_frames:
+        tb.log.info("Trying to recv frames")
+        rx_frame = await sink.recv()
+        assert rx_frame.tdata == test_frame.tdata
+
+    assert sink.empty()
+
+
 async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     tb = TB(dut)
@@ -157,7 +177,7 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     # Packets recvd on wire on port 1 should be sent to tx on port 0
     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0])
     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet2)
-    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+    await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

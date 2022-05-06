@@ -212,6 +212,9 @@ module stream_switch_dfx #(
     wire     [1-1:0] axis_p4hdrout_tlast;
     wire  [48*1-1:0] axis_p4hdrout_tuser;
 
+    wire             user_metadata_out_valid;
+    wire             drop_pkt;
+
     vitis_net_p4_0 p4_hdr_update (
       .s_axis_aclk     (axis_aclk),                                        // input wire s_axis_aclk
       .s_axis_aresetn  (axis_aresetn),                                     // input wire s_axis_aresetn
@@ -219,7 +222,8 @@ module stream_switch_dfx #(
       .s_axi_aresetn   (axil_aresetn),                                     // input wire s_axi_aresetn
       .user_metadata_in({s_axis_adap_rx_250mhz_tuser_size[`getvec(16, i)], // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
         s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],                   // and the order of each field within the metadata struct as used by the
-        s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)]                    // generated RTL implementation
+        s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],                   // generated RTL implementation
+        1'b0
       }),                                                                  // input wire [47 : 0] user_metadata_in
 
       .user_metadata_in_valid(s_axis_adap_rx_250mhz_tvalid[i] &&
@@ -229,7 +233,8 @@ module stream_switch_dfx #(
 
       .user_metadata_out({axis_p4hdrout_tuser[15:0],                       // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
         axis_p4hdrout_tuser[31:16],                                        // and the order of each field within the metadata struct as used
-        axis_p4hdrout_tuser[47:32]                                         // by the generated RTL implementation
+        axis_p4hdrout_tuser[47:32],                                        // by the generated RTL implementation
+        drop_pkt
       }),                                                                  // output wire [47 : 0] user_metadata_out
 
       .user_metadata_out_valid(user_metadata_out_valid),                   // output wire user_metadata_out_valid
@@ -239,11 +244,11 @@ module stream_switch_dfx #(
       .s_axis_tvalid   (s_axis_adap_rx_250mhz_tvalid[i]),                  // input wire s_axis_tvalid
       .s_axis_tready   (s_axis_adap_rx_250mhz_tready[i]),                  // output wire s_axis_tready
 
-      .m_axis_tdata    (axis_p4hdrout_tdata[`getvec(512, 0)]),             // output wire [511 : 0] m_axis_tdata
-      .m_axis_tkeep    (axis_p4hdrout_tkeep[`getvec(64, 0)]),              // output wire [63 : 0] m_axis_tkeep
-      .m_axis_tlast    (axis_p4hdrout_tlast[0]),                           // output wire m_axis_tlast
-      .m_axis_tvalid   (axis_p4hdrout_tvalid[0]),                          // output wire m_axis_tvalid
-      .m_axis_tready   (axis_p4hdrout_tready[0]),                          // input wire m_axis_tready
+      .m_axis_tdata    (axis_p4hdrout_tdata),                              // output wire [511 : 0] m_axis_tdata
+      .m_axis_tkeep    (axis_p4hdrout_tkeep),                              // output wire [63 : 0] m_axis_tkeep
+      .m_axis_tlast    (axis_p4hdrout_tlast),                              // output wire m_axis_tlast
+      .m_axis_tvalid   (axis_p4hdrout_tvalid),                             // output wire m_axis_tvalid
+      .m_axis_tready   (axis_p4hdrout_tready),                             // input wire m_axis_tready
 
       .s_axi_araddr    (axil_p4hdr_araddr),                                // input wire [12 : 0] s_axi_araddr
       .s_axi_arready   (axil_p4hdr_arready),                               // output wire s_axi_arready
@@ -284,10 +289,12 @@ module stream_switch_dfx #(
     assign axis_combiner_tuser[16+:16]     = s_axis_qdma_h2c_tuser_src[15:0];
     assign axis_combiner_tuser[32+:16]     = s_axis_qdma_h2c_tuser_dst[15:0];
 
+    // wire [63:0] keep_pkt;
+    // assign keep_pkt = {63{user_metadata_out_valid && ~drop_pkt}};
     assign axis_p4hdrout_tready[0]         = axis_combiner_tready[1+:1];
     assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid[0];
     assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata[`getvec(512, 0)];
-    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)];
+    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)]; // & keep_pkt;
     assign axis_combiner_tlast[1+:1]       = axis_p4hdrout_tlast[0];
     assign axis_combiner_tuser[48+:48]     = axis_p4hdrout_tuser;
 
