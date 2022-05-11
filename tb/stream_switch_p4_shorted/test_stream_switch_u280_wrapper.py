@@ -105,10 +105,10 @@ class TB:
 async def check_connection(tb, source, sink, my_packet=my_packet):
     # Pkts on source should arrive at sink
     test_frames = []
-    # test_frame = AxiStreamFrame(b'101010101')
+    # test_frame = AxiStreamFrame(b'101010101', tuser=0)
     # pkt_bytearray = bytearray(bytes(my_packet))
     # pkt_bytearray.reverse()
-    test_frame = AxiStreamFrame(bytes(my_packet), tuser=b'\x00'*64 + b'0b0')
+    test_frame = AxiStreamFrame(bytes(my_packet), tuser=0)
     await source.send(test_frame)
     test_frames.append(test_frame)
     # tb.log.info("Frames sent")
@@ -123,14 +123,14 @@ async def check_connection(tb, source, sink, my_packet=my_packet):
 
 async def check_drop(tb, source, sink, drop_pkt, my_packet=my_packet):
     # This should be dropped
-    test_frame = AxiStreamFrame(bytes(drop_pkt), tuser=b'\x00'*64 + b'0b0')
+    test_frame = AxiStreamFrame(bytes(drop_pkt), tuser=0)
     await source.send(test_frame)
     tb.log.info("Trying to recv frames")
     rx_frame = await sink.recv()
     assert rx_frame.tdata == b''
 
     # This should not be dropped
-    test_frame = AxiStreamFrame(bytes(my_packet), tuser=b'\x00'*64 + b'0b0')
+    test_frame = AxiStreamFrame(bytes(my_packet), tuser=0)
     await source.send(test_frame)
     # tb.log.info("Frames sent")
 
@@ -181,8 +181,21 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     tb.log.info("Checking port 1 with UDP 1")
     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet2)
     tb.log.info("Checking port 1 with TCP")
-    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
-    # await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+    # await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+    await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+
+    # source = tb.source_rx[1]
+    # test_frame = AxiStreamFrame(bytes(my_packet), tuser=0)
+    # await source.send(test_frame)
+    # test_frame = AxiStreamFrame(bytes(my_packet2), tuser=0)
+    # await source.send(test_frame)
+    # test_frame = AxiStreamFrame(bytes(my_packet3), tuser=0)
+    # await source.send(test_frame)
+
+    # for _ in range(3):
+    #     recv_frame = await tb.sink_tx[0].recv()
+    #     tb.log.info("RX: {}".format(recv_frame))
+    # assert tb.sink_tx[0].empty()
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

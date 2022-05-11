@@ -93,7 +93,7 @@ struct headers {
 struct metadata {
     bit<2> is_same;
     bit<2> is_udp;
-    // bit<1> drop;
+    bit<1> drop;
 }
 
 // User-defined errors
@@ -219,8 +219,8 @@ control MyProcessing(inout headers hdr,
     apply {
         if (hdr.udp.isValid()) {
             meta.is_udp = 0x2;
-            smeta.drop = 0;
-            // meta.drop = 0;
+            // smeta.drop = 0;
+            meta.drop = 0;
             if(hdr.udp.dst_port == SRC_PORT0) {
                 same();
             }
@@ -229,8 +229,8 @@ control MyProcessing(inout headers hdr,
             }
         } else {
             meta.is_udp = 0x1;
-            // meta.drop = 1;
-            smeta.drop = 1;
+            meta.drop = 1;
+            // smeta.drop = 1;
         }
     }
         // if (hdr.udp.isValid()) {

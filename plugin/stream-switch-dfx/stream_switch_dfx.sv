@@ -210,9 +210,12 @@ module stream_switch_dfx #(
     wire [512*1-1:0] axis_p4hdrout_tdata;
     wire  [64*1-1:0] axis_p4hdrout_tkeep;
     wire     [1-1:0] axis_p4hdrout_tlast;
-    wire  [48*1-1:0] axis_p4hdrout_tuser;
+    // wire  [48*1-1:0] axis_p4hdrout_tuser;
 
     wire             user_metadata_out_valid;
+    wire       [4:0] user_metadata_out;
+    wire             is_same;
+    wire             is_udp;
     wire             drop_pkt;
 
     vitis_net_p4_0 p4_hdr_update (
@@ -220,22 +223,25 @@ module stream_switch_dfx #(
       .s_axis_aresetn  (axis_aresetn),                                     // input wire s_axis_aresetn
       .s_axi_aclk      (axil_aclk),                                        // input wire s_axi_aclk
       .s_axi_aresetn   (axil_aresetn),                                     // input wire s_axi_aresetn
-      .user_metadata_in({s_axis_adap_rx_250mhz_tuser_size[`getvec(16, i)], // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
-        s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],                   // and the order of each field within the metadata struct as used by the
-        s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],                   // generated RTL implementation
-        1'b0
-      }),                                                                  // input wire [47 : 0] user_metadata_in
+      // .user_metadata_in({s_axis_adap_rx_250mhz_tuser_size[`getvec(16, i)], // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
+      //   s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],                   // and the order of each field within the metadata struct as used by the
+      //   s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],                   // generated RTL implementation
+      //   1'b0
+      // }),                                                                  // input wire [47 : 0] user_metadata_in
+      .user_metadata_in(5'b0),
 
       .user_metadata_in_valid(s_axis_adap_rx_250mhz_tvalid[i] &&
                         s_axis_adap_rx_250mhz_tready[i] &&
                         s_axis_adap_rx_250mhz_tlast[i]
       ),                                                                   // input wire user_metadata_in_valid
 
-      .user_metadata_out({axis_p4hdrout_tuser[15:0],                       // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
-        axis_p4hdrout_tuser[31:16],                                        // and the order of each field within the metadata struct as used
-        axis_p4hdrout_tuser[47:32],                                        // by the generated RTL implementation
-        drop_pkt
-      }),                                                                  // output wire [47 : 0] user_metadata_out
+      // .user_metadata_out({axis_p4hdrout_tuser[15:0],                       // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
+      //   axis_p4hdrout_tuser[31:16],                                        // and the order of each field within the metadata struct as used
+      //   axis_p4hdrout_tuser[47:32],                                        // by the generated RTL implementation
+      //   drop_pkt
+      // }),                                                                  // output wire [47 : 0] user_metadata_out
+
+      .user_metadata_out(user_metadata_out),
 
       .user_metadata_out_valid(user_metadata_out_valid),                   // output wire user_metadata_out_valid
       .s_axis_tdata    (s_axis_adap_rx_250mhz_tdata[`getvec(512, i)]),     // input wire [511 : 0] s_axis_tdata
@@ -269,6 +275,10 @@ module stream_switch_dfx #(
       .s_axi_wvalid    (axil_p4hdr_wvalid)                                 // input wire s_axi_wvalid
     );
 
+    assign is_same = user_metadata_out[4:3];
+    assign is_udp = user_metadata_out[2:1];
+    assign drop_pkt = user_metadata_out[0];
+
     // Any traffic on CMAC1 RX should be diverted to CMAC0 TX.
     localparam SPLIT_COMBINE_PORT_COUNT = 2;
     wire     [SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tready;
@@ -294,9 +304,9 @@ module stream_switch_dfx #(
     assign axis_p4hdrout_tready[0]         = axis_combiner_tready[1+:1];
     assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid[0];
     assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata[`getvec(512, 0)];
-    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)]; // & keep_pkt;
+    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)] & keep_pkt;
     assign axis_combiner_tlast[1+:1]       = axis_p4hdrout_tlast[0];
-    assign axis_combiner_tuser[48+:48]     = axis_p4hdrout_tuser;
+    assign axis_combiner_tuser[48+:48]     = axis_adap_rx_250mhz_tuser; // axis_p4hdrout_tuser;
 
     axis_switch_combiner_tdest combiner_inst (
       .aclk           (axis_aclk),
