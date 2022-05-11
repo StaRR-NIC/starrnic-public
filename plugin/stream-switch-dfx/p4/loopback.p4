@@ -16,11 +16,19 @@ const bit<16> IPV4_TYPE = 0x0800;
 const bit<8>  UDP_PROT  = 0x11;
 
 // N3, port 0
-const bit<32> SRC_IP    = 0x0a000035;     // 10.0.0.53
-const bit<48> SRC_MAC   = 0x000a35bc7abc; // 00:0a:35:bc:7a:bc
+const bit<32> SRC_IP1   = 0x0a000035;     // 10.0.0.53
+const bit<48> SRC_MAC1  = 0x000a35bc7abc; // 00:0a:35:d1:6b:ce
+
+// N3, port 1
+const bit<32> SRC_IP2   = 0x0a000037;     // 10.0.0.55
+const bit<48> SRC_MAC2  = 0x000a35bc7abc; // 00:0a:35:6d:cc:d5
+
+// Choices
 const bit<16> SRC_PORT0 = 16w62176;       // 62176
 const bit<16> SRC_PORT1 = 16w62177;       // 62177
 const bit<16> SRC_PORT2 = 16w62178;       // 62178
+const bit<16> SRC_PORT3 = 16w62179;       // 62179
+const bit<16> SRC_PORT4 = 16w62180;       // 62180
 
 // N5 port 1
 const bit<32> DST_IP1   = 0x0a00002d;     // 10.0.0.45
@@ -91,7 +99,7 @@ struct headers {
 
 // User metadata structure
 struct metadata {
-    bit<2> is_same;
+    bit<16> parsed_port;
     bit<2> is_udp;
     bit<1> drop;
 }
@@ -156,31 +164,59 @@ control MyProcessing(inout headers hdr,
                      inout metadata meta,
                      inout standard_metadata_t smeta) {
 
-    // MacAddr  tmp_eth_addr;
-    // IPv4Addr tmp_ip_addr;
-    // UdpPort  tmp_udp_port;
+    MacAddr  tmp_eth_addr;
+    IPv4Addr tmp_ip_addr;
+    UdpPort  tmp_udp_port;
 
     // action dropPacket() {
-    //     smeta.drop = 1;
+    //     meta.drop = 1;
     // }
 
-    // action swap_eth_address() {
-    //     tmp_eth_addr = hdr.eth.dmac;
-    //     hdr.eth.dmac = hdr.eth.smac;
-    //     hdr.eth.smac = tmp_eth_addr;
-    // }
+    action swap_eth_address() {
+        tmp_eth_addr = hdr.eth.dmac;
+        hdr.eth.dmac = hdr.eth.smac;
+        hdr.eth.smac = tmp_eth_addr;
+    }
 
-    // action swap_ip_address() {
-    //     tmp_ip_addr  = hdr.ipv4.dst;
-    //     hdr.ipv4.dst = hdr.ipv4.src;
-    //     hdr.ipv4.src = tmp_ip_addr;
-    // }
+    action swap_ip_address() {
+        tmp_ip_addr  = hdr.ipv4.dst;
+        hdr.ipv4.dst = hdr.ipv4.src;
+        hdr.ipv4.src = tmp_ip_addr;
+    }
 
-    // action swap_udp_address() {
-    //     tmp_udp_port     = hdr.udp.dst_port;
-    //     hdr.udp.dst_port = hdr.udp.src_port;
-    //     hdr.udp.src_port = tmp_udp_port;
-    // }
+    action swap_udp_address() {
+        tmp_udp_port     = hdr.udp.dst_port;
+        hdr.udp.dst_port = hdr.udp.src_port;
+        hdr.udp.src_port = tmp_udp_port;
+    }
+
+    action echo_packet() {
+        swap_eth_address();
+        swap_ip_address();
+        swap_udp_address();
+    }
+
+    action set_src_as_1() {
+        hdr.eth.smac = SRC_MAC1;
+        hdr.ipv4.src = SRC_IP1;
+    }
+
+    action set_src_as_2() {
+        hdr.eth.smac = SRC_MAC2;
+        hdr.ipv4.src = SRC_IP2;
+    }
+
+    action set_dst_as_1() {
+        hdr.eth.dmac = DST_MAC1;
+        hdr.ipv4.dst = DST_IP1;
+        hdr.udp.dst_port = DST_PORT1;
+    }
+
+    action set_dst_as_2() {
+        hdr.eth.dmac = DST_MAC2;
+        hdr.ipv4.dst = DST_IP2;
+        hdr.udp.dst_port = DST_PORT2;
+    }
 
     // action echo_hard1() {
     //     hdr.eth.smac = SRC_MAC;
@@ -202,37 +238,44 @@ control MyProcessing(inout headers hdr,
     //     hdr.udp.dst_port = DST_PORT2;
     // }
 
-    // action echo_packet() {
-    //     swap_eth_address();
-    //     swap_ip_address();
-    //     swap_udp_address();
-    // }
-
-    action same() {
-        meta.is_same = 0x1;
-    }
-
-    action diff() {
-        meta.is_same = 0x2;
-    }
-
     apply {
         if (hdr.udp.isValid()) {
             meta.is_udp = 0x2;
-            // smeta.drop = 0;
             meta.drop = 0;
+            meta.parsed_port = hdr.udp.dst_port;
+
             if(hdr.udp.dst_port == SRC_PORT0) {
-                same();
+                echo_packet();
             }
-            else {
-                diff();
-            }
+            // else if (hdr.udp.dst_port == SRC_PORT1) {
+            //     set_src_as_1();
+            //     set_dst_as_1();
+            //     hdr.udp.src_port = SRC_PORT1;
+            // }
+            // else if (hdr.udp.dst_port == SRC_PORT2) {
+            //     set_src_as_1();
+            //     set_dst_as_2();
+            //     hdr.udp.src_port = SRC_PORT2;
+            // }
+            // else if (hdr.udp.dst_port == SRC_PORT3) {
+            //     set_src_as_2();
+            //     set_dst_as_1();
+            //     hdr.udp.src_port = SRC_PORT3;
+            // }
+            // else if (hdr.udp.dst_port == SRC_PORT4) {
+            //     set_src_as_2();
+            //     set_dst_as_2();
+            //     hdr.udp.src_port = SRC_PORT4;
+            // }
+            // else {
+            //     meta.drop = 1;
+            // }
+
         } else {
             meta.is_udp = 0x1;
             meta.drop = 1;
-            // smeta.drop = 1;
         }
-    }
+
         // if (hdr.udp.isValid()) {
         //     if (hdr.udp.dst_port == SRC_PORT0) {
         //         echo_packet();
@@ -250,6 +293,7 @@ control MyProcessing(inout headers hdr,
         // else {
         //     // dropPacket();
         // }
+    }
 }
 
 // ****************************************************************************** //

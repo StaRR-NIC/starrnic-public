@@ -10,9 +10,35 @@ from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
 
 from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
 
-my_packet = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'\xaa'*16)
-my_packet2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xbb'*16)
-my_packet3 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62178) / (b'\xcc'*16)
+packets = [
+    Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62176) / (b'\xa0'*16),
+    Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xa1'*16),
+    Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62178) / (b'\xa2'*16),
+    Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62179) / (b'\xa3'*16),
+    Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62180) / (b'\xa4'*16),
+    Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62176) / (b'\xcc'*16),
+]
+
+smac1 = '00:0a:35:d1:6b:ce'
+sip1 = '10.0.0.53'
+smac2 = '00:0a:35:6d:cc:d5'
+sip2 = '10.0.0.55'
+sports = [62176 + i for i in range(5)]
+
+dmac1 = '00:0a:35:02:9d:2d'
+dip1 = '10.0.0.45'
+dport1 = 60512
+dmac2 = '00:0a:35:02:9d:2f'
+dip2 = '10.0.0.47'
+dport2 = 60513
+
+expectations = [
+    ('10.0.0.53', '10.0.0.40', '00:0a:35:bc:7a:bc', 'ff:0a:35:bc:7a:bc', sports[0], 111),
+    (sip1, dip1, smac1, dmac1, sports[1], dport1),
+    (sip1, dip2, smac1, dmac2, sports[2], dport2),
+    (sip2, dip1, smac2, dmac1, sports[3], dport1),
+    (sip2, dip2, smac2, dmac2, sports[4], dport2)
+]
 
 """
 Eth:
@@ -102,13 +128,10 @@ class TB:
         # await RisingEdge(self.dut.axil_aclk)
 
 
-async def check_connection(tb, source, sink, my_packet=my_packet):
+async def check_connection(tb, source, sink, test_packet=packets[0]):
     # Pkts on source should arrive at sink
     test_frames = []
-    # test_frame = AxiStreamFrame(b'101010101', tuser=0)
-    # pkt_bytearray = bytearray(bytes(my_packet))
-    # pkt_bytearray.reverse()
-    test_frame = AxiStreamFrame(bytes(my_packet), tuser=0)
+    test_frame = AxiStreamFrame(bytes(test_packet), tuser=0)
     await source.send(test_frame)
     test_frames.append(test_frame)
     # tb.log.info("Frames sent")
@@ -121,22 +144,34 @@ async def check_connection(tb, source, sink, my_packet=my_packet):
     assert sink.empty()
 
 
-async def check_drop(tb, source, sink, drop_pkt, my_packet=my_packet):
+async def check_connection_hdr(tb, source, sink, test_packet, src: str, dst: str, smac: str, dmac: str, sport: int, dport: int):
+    # Pkts on source should arrive at sink
+    test_frames = []
+    test_frame = AxiStreamFrame(bytes(test_packet), tuser=0)
+    await source.send(test_frame)
+    test_frames.append(test_frame)
+
+    for test_frame in test_frames:
+        tb.log.info("Trying to recv frames")
+        rx_frame = await sink.recv()
+        rx_pkt = Ether(rx_frame.tdata)
+        assert rx_pkt.src == smac
+        assert rx_pkt.dst == dmac
+        assert rx_pkt.sport == sport
+        assert rx_pkt.dport == dport
+        assert rx_pkt[IP].src == src
+        assert rx_pkt[IP].dst == dst
+
+    assert sink.empty()
+
+
+async def check_drop(tb, source, sink, drop_pkt):
     # This should be dropped
     test_frame = AxiStreamFrame(bytes(drop_pkt), tuser=0)
     await source.send(test_frame)
     tb.log.info("Trying to recv frames")
     rx_frame = await sink.recv()
     assert rx_frame.tdata == b''
-
-    # This should not be dropped
-    test_frame = AxiStreamFrame(bytes(my_packet), tuser=0)
-    await source.send(test_frame)
-    # tb.log.info("Frames sent")
-
-    tb.log.info("Trying to recv frames")
-    rx_frame = await sink.recv()
-    assert rx_frame.tdata == test_frame.tdata
 
     assert sink.empty()
 
@@ -175,27 +210,19 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await check_connection(tb, tb.source_tx[0], tb.sink_tx[0])
     await check_connection(tb, tb.source_rx[0], tb.sink_rx[0])
 
-    # Packets recvd on wire on port 1 should be sent to tx on port 0
-    tb.log.info("Checking port 1 with UDP 0")
-    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0])
-    tb.log.info("Checking port 1 with UDP 1")
-    await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet2)
-    tb.log.info("Checking port 1 with TCP")
-    # await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
-    await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], my_packet3)
+    # # Non udp packets should be dropped
+    # tb.log.info("Checking port 1 with TCP")
+    # await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-1])
 
-    # source = tb.source_rx[1]
-    # test_frame = AxiStreamFrame(bytes(my_packet), tuser=0)
-    # await source.send(test_frame)
-    # test_frame = AxiStreamFrame(bytes(my_packet2), tuser=0)
-    # await source.send(test_frame)
-    # test_frame = AxiStreamFrame(bytes(my_packet3), tuser=0)
-    # await source.send(test_frame)
+    # # Packets recvd on wire on port 1 should be sent to tx on port 0 with hdr modifications
+    # for i, pkt in enumerate(packets[:-1]):
+    #     tb.log.info("Checking port 1 with UDP pkt idx {}, port {}".format(i, pkt.dport))
+    #     await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], pkt, *expectations[i])
 
-    # for _ in range(3):
-    #     recv_frame = await tb.sink_tx[0].recv()
-    #     tb.log.info("RX: {}".format(recv_frame))
-    # assert tb.sink_tx[0].empty()
+    # Check if we can accept these packets as is
+    for i, pkt in enumerate(packets[:-1]):
+        tb.log.info("Checking port 1 with UDP pkt idx {}, port {}".format(i, pkt.dport))
+        await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], pkt)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

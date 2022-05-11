@@ -212,11 +212,11 @@ module stream_switch_dfx #(
     wire     [1-1:0] axis_p4hdrout_tlast;
     // wire  [48*1-1:0] axis_p4hdrout_tuser;
 
-    wire             user_metadata_out_valid;
-    wire       [4:0] user_metadata_out;
-    wire             is_same;
-    wire             is_udp;
-    wire             drop_pkt;
+    wire              user_metadata_out_valid;
+    wire       [18:0] user_metadata_out;
+    wire       [15:0] parsed_port;
+    wire        [1:0] is_udp;
+    wire              drop_pkt;
 
     vitis_net_p4_0 p4_hdr_update (
       .s_axis_aclk     (axis_aclk),                                        // input wire s_axis_aclk
@@ -228,7 +228,7 @@ module stream_switch_dfx #(
       //   s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],                   // generated RTL implementation
       //   1'b0
       // }),                                                                  // input wire [47 : 0] user_metadata_in
-      .user_metadata_in(5'b0),
+      .user_metadata_in(19'b0),
 
       .user_metadata_in_valid(s_axis_adap_rx_250mhz_tvalid[i] &&
                         s_axis_adap_rx_250mhz_tready[i] &&
@@ -275,9 +275,9 @@ module stream_switch_dfx #(
       .s_axi_wvalid    (axil_p4hdr_wvalid)                                 // input wire s_axi_wvalid
     );
 
-    assign is_same = user_metadata_out[4:3];
-    assign is_udp = user_metadata_out[2:1];
-    assign drop_pkt = user_metadata_out[0];
+    assign parsed_port = user_metadata_out[18:3];
+    assign is_udp      = user_metadata_out[2:1];
+    assign drop_pkt    = user_metadata_out[0];
 
     // Any traffic on CMAC1 RX should be diverted to CMAC0 TX.
     localparam SPLIT_COMBINE_PORT_COUNT = 2;
