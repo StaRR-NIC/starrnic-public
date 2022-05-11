@@ -243,10 +243,10 @@ control MyProcessing(inout headers hdr,
             meta.is_udp = 0x2;
             meta.drop = 0;
             meta.parsed_port = hdr.udp.dst_port;
-
-            if(hdr.udp.dst_port == SRC_PORT0) {
-                echo_packet();
-            }
+            // hdr.eth.smac = SRC_MAC1; // modification line
+            // if(hdr.udp.dst_port == SRC_PORT0) {
+            //     echo_packet();
+            // }
             // else if (hdr.udp.dst_port == SRC_PORT1) {
             //     set_src_as_1();
             //     set_dst_as_1();
