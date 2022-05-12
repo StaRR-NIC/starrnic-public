@@ -213,10 +213,11 @@ module stream_switch_dfx #(
     // wire  [48*1-1:0] axis_p4hdrout_tuser;
 
     wire              user_metadata_out_valid;
+    // wire       [15:0] user_metadata_out; // for echo example
     wire       [18:0] user_metadata_out;
-    wire       [15:0] parsed_port;
-    wire        [1:0] is_udp;
-    wire              drop_pkt;
+    // wire       [15:0] parsed_port;
+    // wire        [1:0] is_udp;
+    // wire              drop_pkt;
 
     vitis_net_p4_0 p4_hdr_update (
       .s_axis_aclk     (axis_aclk),                                        // input wire s_axis_aclk
@@ -228,6 +229,7 @@ module stream_switch_dfx #(
       //   s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],                   // generated RTL implementation
       //   1'b0
       // }),                                                                  // input wire [47 : 0] user_metadata_in
+      // .user_metadata_in(16'hf2e0),
       .user_metadata_in(19'b0),
 
       .user_metadata_in_valid(s_axis_adap_rx_250mhz_tvalid[i] &&
@@ -275,9 +277,9 @@ module stream_switch_dfx #(
       .s_axi_wvalid    (axil_p4hdr_wvalid)                                 // input wire s_axi_wvalid
     );
 
-    assign parsed_port = user_metadata_out[18:3];
-    assign is_udp      = user_metadata_out[2:1];
-    assign drop_pkt    = user_metadata_out[0];
+    // assign parsed_port = user_metadata_out[18:3];
+    // assign is_udp      = user_metadata_out[2:1];
+    // assign drop_pkt    = user_metadata_out[0];
 
     // Any traffic on CMAC1 RX should be diverted to CMAC0 TX.
     localparam SPLIT_COMBINE_PORT_COUNT = 2;
@@ -299,12 +301,12 @@ module stream_switch_dfx #(
     assign axis_combiner_tuser[16+:16]     = s_axis_qdma_h2c_tuser_src[15:0];
     assign axis_combiner_tuser[32+:16]     = s_axis_qdma_h2c_tuser_dst[15:0];
 
-    wire [63:0] keep_pkt;
-    assign keep_pkt = {63{user_metadata_out_valid && ~drop_pkt}};
+    // wire [63:0] keep_pkt;
+    // assign keep_pkt = {63{user_metadata_out_valid && ~drop_pkt}};
     assign axis_p4hdrout_tready[0]         = axis_combiner_tready[1+:1];
     assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid[0];
     assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata[`getvec(512, 0)];
-    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)] & keep_pkt;
+    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep[`getvec(64, 0)]; // & keep_pkt;
     assign axis_combiner_tlast[1+:1]       = axis_p4hdrout_tlast[0];
     assign axis_combiner_tuser[48+:48]     = axis_adap_rx_250mhz_tuser; // axis_p4hdrout_tuser;
 

@@ -1,10 +1,42 @@
+// ----------------------------------------------------------------------- //
+//  This file is owned and controlled by Xilinx and must be used solely    //
+//  for design, simulation, implementation and creation of design files    //
+//  limited to Xilinx devices or technologies. Use with non-Xilinx         //
+//  devices or technologies is expressly prohibited and immediately        //
+//  terminates your license.                                               //
+//                                                                         //
+//  XILINX IS PROVIDING THIS DESIGN, CODE, OR INFORMATION "AS IS" SOLELY   //
+//  FOR USE IN DEVELOPING PROGRAMS AND SOLUTIONS FOR XILINX DEVICES.  BY   //
+//  PROVIDING THIS DESIGN, CODE, OR INFORMATION AS ONE POSSIBLE            //
+//  IMPLEMENTATION OF THIS FEATURE, APPLICATION OR STANDARD, XILINX IS     //
+//  MAKING NO REPRESENTATION THAT THIS IMPLEMENTATION IS FREE FROM ANY     //
+//  CLAIMS OF INFRINGEMENT, AND YOU ARE RESPONSIBLE FOR OBTAINING ANY      //
+//  RIGHTS YOU MAY REQUIRE FOR YOUR IMPLEMENTATION.  XILINX EXPRESSLY      //
+//  DISCLAIMS ANY WARRANTY WHATSOEVER WITH RESPECT TO THE ADEQUACY OF THE  //
+//  IMPLEMENTATION, INCLUDING BUT NOT LIMITED TO ANY WARRANTIES OR         //
+//  REPRESENTATIONS THAT THIS IMPLEMENTATION IS FREE FROM CLAIMS OF        //
+//  INFRINGEMENT, IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A  //
+//  PARTICULAR PURPOSE.                                                    //
+//                                                                         //
+//  Xilinx products are not intended for use in life support appliances,   //
+//  devices, or systems.  Use in such applications are expressly           //
+//  prohibited.                                                            //
+//                                                                         //
+//  (c) Copyright 1995-2019 Xilinx, Inc.                                   //
+//  All rights reserved.                                                   //
+// ----------------------------------------------------------------------- //
+
 #include <core.p4>
 #include <xsa.p4>
 
 /*
- * Only considers UDP packets, drops all other packets.
- * Changes src IP, src port, src MAC to a hard coded value.
- * Dst IP, port, MAC can be hardcoded or copied from src values in the unmodified packet.
+ * UDP Echo Server:
+ *
+ * The Echo example is like a UDP echo server. It does nothing more than sending 
+ * back whatever packets are sent to it, no control plane software is required. 
+ * The UDP port is setup to listen to port specified with metadata field echo_port. 
+ * Packets containing a different UDP destination port will remain unmodified. 
+ *
  */
 
 typedef bit<48>  MacAddr;
@@ -14,32 +46,6 @@ typedef bit<16>  UdpPort;
 const bit<16> VLAN_TYPE = 0x8100;
 const bit<16> IPV4_TYPE = 0x0800;
 const bit<8>  UDP_PROT  = 0x11;
-
-// N3, port 0
-const bit<32> SRC_IP1   = 0x0a000035;     // 10.0.0.53
-const bit<48> SRC_MAC1  = 0x000a35bc7abc; // 00:0a:35:d1:6b:ce
-
-// N3, port 1
-const bit<32> SRC_IP2   = 0x0a000037;     // 10.0.0.55
-const bit<48> SRC_MAC2  = 0x000a35bc7abc; // 00:0a:35:6d:cc:d5
-
-// Choices
-const bit<16> SRC_PORT0 = 16w62176;       // 62176
-const bit<16> SRC_PORT1 = 16w62177;       // 62177
-const bit<16> SRC_PORT2 = 16w62178;       // 62178
-const bit<16> SRC_PORT3 = 16w62179;       // 62179
-const bit<16> SRC_PORT4 = 16w62180;       // 62180
-
-// N5 port 1
-const bit<32> DST_IP1   = 0x0a00002d;     // 10.0.0.45
-const bit<16> DST_PORT1 = 16w60512;       // 60512
-const bit<48> DST_MAC1  = 0x000a35029d2d; // 00:0a:35:02:9d:2d
-
- // N5, port 0
-const bit<32> DST_IP2   = 0x0a00002f;     // 10.0.0.47
-const bit<16> DST_PORT2 = 16w60513;       // 60513
-const bit<48> DST_MAC2  = 0x000a35029d2f; // 00:0a:35:02:9d:2f
-
 
 // ****************************************************************************** //
 // *************************** H E A D E R S  *********************************** //
@@ -99,12 +105,10 @@ struct headers {
 
 // User metadata structure
 struct metadata {
-    bit<16> parsed_port;
-    bit<2> is_udp;
-    bit<1> drop;
+    UdpPort echo_port;
 }
 
-// User-defined errors
+// User-defined errors 
 error {
     InvalidIPpacket
 }
@@ -113,40 +117,40 @@ error {
 // *************************** P A R S E R  ************************************* //
 // ****************************************************************************** //
 
-parser MyParser(packet_in packet,
-                out headers hdr,
-                inout metadata meta,
+parser MyParser(packet_in packet, 
+                out headers hdr, 
+                inout metadata meta, 
                 inout standard_metadata_t smeta) {
-
+    
     state start {
         transition parse_eth;
     }
-
+    
     state parse_eth {
         packet.extract(hdr.eth);
         transition select(hdr.eth.type) {
             VLAN_TYPE : parse_vlan;
             IPV4_TYPE : parse_ipv4;
-            default   : accept;
+            default   : accept; 
         }
     }
-
+    
     state parse_vlan {
         packet.extract(hdr.vlan.next);
         transition select(hdr.vlan.last.tpid) {
             VLAN_TYPE : parse_vlan;
             IPV4_TYPE : parse_ipv4;
-            default   : accept;
+            default   : accept; 
         }
     }
-
+    
     state parse_ipv4 {
         packet.extract(hdr.ipv4);
         verify(hdr.ipv4.version == 4 && hdr.ipv4.hdr_len >= 5, error.InvalidIPpacket);
         packet.extract(hdr.ipv4opt, (((bit<32>)hdr.ipv4.hdr_len - 5) * 32));
         transition select(hdr.ipv4.protocol) {
             UDP_PROT  : parse_udp;
-            default   : accept;
+            default   : accept; 
         }
     }
 
@@ -160,150 +164,54 @@ parser MyParser(packet_in packet,
 // **************************  P R O C E S S I N G   **************************** //
 // ****************************************************************************** //
 
-control MyProcessing(inout headers hdr,
-                     inout metadata meta,
+control MyProcessing(inout headers hdr, 
+                     inout metadata meta, 
                      inout standard_metadata_t smeta) {
 
     MacAddr  tmp_eth_addr;
     IPv4Addr tmp_ip_addr;
     UdpPort  tmp_udp_port;
-
-    // action dropPacket() {
-    //     meta.drop = 1;
-    // }
-
+    
     action swap_eth_address() {
         tmp_eth_addr = hdr.eth.dmac;
         hdr.eth.dmac = hdr.eth.smac;
         hdr.eth.smac = tmp_eth_addr;
     }
-
+    
     action swap_ip_address() {
         tmp_ip_addr  = hdr.ipv4.dst;
         hdr.ipv4.dst = hdr.ipv4.src;
         hdr.ipv4.src = tmp_ip_addr;
     }
-
+    
     action swap_udp_address() {
         tmp_udp_port     = hdr.udp.dst_port;
         hdr.udp.dst_port = hdr.udp.src_port;
         hdr.udp.src_port = tmp_udp_port;
     }
-
+    
     action echo_packet() {
         swap_eth_address();
         swap_ip_address();
-        swap_udp_address();
+        swap_udp_address();  
     }
-
-    action set_src_as_1() {
-        hdr.eth.smac = SRC_MAC1;
-        hdr.ipv4.src = SRC_IP1;
-    }
-
-    action set_src_as_2() {
-        hdr.eth.smac = SRC_MAC2;
-        hdr.ipv4.src = SRC_IP2;
-    }
-
-    action set_dst_as_1() {
-        hdr.eth.dmac = DST_MAC1;
-        hdr.ipv4.dst = DST_IP1;
-        hdr.udp.dst_port = DST_PORT1;
-    }
-
-    action set_dst_as_2() {
-        hdr.eth.dmac = DST_MAC2;
-        hdr.ipv4.dst = DST_IP2;
-        hdr.udp.dst_port = DST_PORT2;
-    }
-
-    // action echo_hard1() {
-    //     hdr.eth.smac = SRC_MAC;
-    //     hdr.ipv4.src = SRC_IP;
-    //     hdr.udp.src_port = SRC_PORT1;
-
-    //     hdr.eth.dmac = DST_MAC1;
-    //     hdr.ipv4.dst = DST_IP1;
-    //     hdr.udp.dst_port = DST_PORT1;
-    // }
-
-    // action echo_hard2() {
-    //     hdr.eth.smac = SRC_MAC;
-    //     hdr.ipv4.src = SRC_IP;
-    //     hdr.udp.src_port = SRC_PORT2;
-
-    //     hdr.eth.dmac = DST_MAC2;
-    //     hdr.ipv4.dst = DST_IP2;
-    //     hdr.udp.dst_port = DST_PORT2;
-    // }
 
     apply {
         if (hdr.udp.isValid()) {
-            meta.is_udp = 0x2;
-            meta.drop = 0;
-            meta.parsed_port = hdr.udp.dst_port;
-            if(hdr.udp.dst_port == SRC_PORT0) {
+            if (hdr.udp.dst_port == meta.echo_port) {
                 echo_packet();
             }
-            else if (hdr.udp.dst_port == SRC_PORT1) {
-                set_src_as_1();
-                set_dst_as_1();
-                hdr.udp.src_port = SRC_PORT1;
-            }
-            else if (hdr.udp.dst_port == SRC_PORT2) {
-                set_src_as_1();
-                set_dst_as_2();
-                hdr.udp.src_port = SRC_PORT2;
-            }
-            else if (hdr.udp.dst_port == SRC_PORT3) {
-                set_src_as_2();
-                set_dst_as_1();
-                hdr.udp.src_port = SRC_PORT3;
-            }
-            else if (hdr.udp.dst_port == SRC_PORT4) {
-                set_src_as_2();
-                set_dst_as_2();
-                hdr.udp.src_port = SRC_PORT4;
-            }
-            else {
-                meta.drop = 1;
-                smeta.drop = 1;
-            }
-
-        } else {
-            meta.is_udp = 0x1;
-            meta.drop = 1;
-            smeta.drop = 1;
         }
-
-        // if (hdr.udp.isValid()) {
-        //     if (hdr.udp.dst_port == SRC_PORT0) {
-        //         echo_packet();
-        //     }
-        //     else if (hdr.udp.dst_port == SRC_PORT1) {
-        //         echo_hard1();
-        //     }
-        //     else if (hdr.udp.dst_port == SRC_PORT2) {
-        //         echo_hard2();
-        //     }
-        //     else {
-        //         // dropPacket();
-        //     }
-        // }
-        // else {
-        //     // dropPacket();
-        // }
     }
-}
+} 
 
 // ****************************************************************************** //
 // ***************************  D E P A R S E R  ******************************** //
 // ****************************************************************************** //
 
-control MyDeparser(packet_out packet,
+control MyDeparser(packet_out packet, 
                    in headers hdr,
-                   inout metadata meta,
+                   inout metadata meta, 
                    inout standard_metadata_t smeta) {
     apply {
         packet.emit(hdr.eth);
@@ -319,7 +227,7 @@ control MyDeparser(packet_out packet,
 // ****************************************************************************** //
 
 XilinxPipeline(
-    MyParser(),
-    MyProcessing(),
+    MyParser(), 
+    MyProcessing(), 
     MyDeparser()
 ) main;
