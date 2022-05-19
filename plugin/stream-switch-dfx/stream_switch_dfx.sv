@@ -272,6 +272,32 @@ module stream_switch_dfx #(
       .s_axi_wvalid    (axil_p4hdr_wvalid)                                 // input wire s_axi_wvalid
     );
 
+    wire     [1-1:0] axis_ppl_tready;
+    wire     [1-1:0] axis_ppl_tvalid;
+    wire [512*1-1:0] axis_ppl_tdata;
+    wire  [64*1-1:0] axis_ppl_tkeep;
+    wire     [1-1:0] axis_ppl_tlast;
+    wire  [48*1-1:0] axis_ppl_tuser;
+
+    axi_stream_pipeline p4_ppl_combiner (
+      .s_axis_tvalid (axis_p4hdrout_tvalid),
+      .s_axis_tdata  (axis_p4hdrout_tdata),
+      .s_axis_tkeep  (axis_p4hdrout_tkeep),
+      .s_axis_tlast  (axis_p4hdrout_tlast),
+      .s_axis_tuser  (axis_p4hdrout_tuser),
+      .s_axis_tready (axis_p4hdrout_tready),
+
+      .m_axis_tvalid (axis_ppl_tvalid),
+      .m_axis_tdata  (axis_ppl_tdata),
+      .m_axis_tkeep  (axis_ppl_tkeep),
+      .m_axis_tlast  (axis_ppl_tlast),
+      .m_axis_tuser  (axis_ppl_tuser),
+      .m_axis_tready (axis_ppl_tready),
+
+      .aclk          (axis_aclk),
+      .aresetn       (axis_aresetn)
+    );
+
     // // Debug signals for P4 module
     // assign parsed_port = user_metadata_out[18:3];
     // assign is_udp      = user_metadata_out[2:1];
@@ -305,12 +331,12 @@ module stream_switch_dfx #(
     assign axis_combiner_tlast[0+:1]       = s_axis_qdma_h2c_tlast[0];
     assign axis_combiner_tuser[0+:48]      = axis_qdma_h2c_tuser;
 
-    assign axis_p4hdrout_tready            = axis_combiner_tready[1];
-    assign axis_combiner_tvalid[1+:1]      = axis_p4hdrout_tvalid;
-    assign axis_combiner_tdata[512+:512]   = axis_p4hdrout_tdata;
-    assign axis_combiner_tkeep[64+:64]     = axis_p4hdrout_tkeep;
-    assign axis_combiner_tlast[1+:1]       = axis_p4hdrout_tlast;
-    assign axis_combiner_tuser[48+:48]     = axis_p4hdrout_tuser;
+    assign axis_ppl_tready                 = axis_combiner_tready[1];
+    assign axis_combiner_tvalid[1+:1]      = axis_ppl_tvalid;
+    assign axis_combiner_tdata[512+:512]   = axis_ppl_tdata;
+    assign axis_combiner_tkeep[64+:64]     = axis_ppl_tkeep;
+    assign axis_combiner_tlast[1+:1]       = axis_ppl_tlast;
+    assign axis_combiner_tuser[48+:48]     = axis_ppl_tuser;
 
     axis_switch_combiner_tdest combiner_inst (
       .aclk           (axis_aclk),
