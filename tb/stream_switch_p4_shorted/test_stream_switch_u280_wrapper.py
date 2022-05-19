@@ -221,10 +221,14 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-1])
 
-    # Check if we can accept these packets as is
+    # # Check if we can accept these packets as is
+    # for i, pkt in enumerate(packets[:-1]):
+    #     tb.log.info("Checking port 1 with UDP pkt idx {}, port {}".format(i, pkt.dport))
+    #     await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], pkt)
+
     for i, pkt in enumerate(packets[:-1]):
         tb.log.info("Checking port 1 with UDP pkt idx {}, port {}".format(i, pkt.dport))
-        await check_connection(tb, tb.source_rx[1], tb.sink_tx[0], pkt)
+        await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], pkt, *expectations[i])
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

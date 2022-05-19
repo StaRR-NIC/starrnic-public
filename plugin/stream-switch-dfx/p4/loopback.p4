@@ -17,11 +17,11 @@ const bit<8>  UDP_PROT  = 0x11;
 
 // N3, port 0
 const bit<32> SRC_IP1   = 0x0a000035;     // 10.0.0.53
-const bit<48> SRC_MAC1  = 0x000a35bc7abc; // 00:0a:35:d1:6b:ce
+const bit<48> SRC_MAC1  = 0x000a35d16bce; // 00:0a:35:d1:6b:ce
 
 // N3, port 1
 const bit<32> SRC_IP2   = 0x0a000037;     // 10.0.0.55
-const bit<48> SRC_MAC2  = 0x000a35bc7abc; // 00:0a:35:6d:cc:d5
+const bit<48> SRC_MAC2  = 0x000a356dccd5; // 00:0a:35:6d:cc:d5
 
 // Choices
 const bit<16> SRC_PORT0 = 16w62176;       // 62176
