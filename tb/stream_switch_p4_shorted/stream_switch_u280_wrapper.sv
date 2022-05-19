@@ -19,7 +19,7 @@ module stream_switch_u280_wrapper (
   output wire              [1:0] s_axil_rresp,
   input wire                     s_axil_rready,
 
-
+  // From PCIe
   input wire      [1-1:0] s_axis_qdma_h2c_port0_tvalid,
   input wire  [512*1-1:0] s_axis_qdma_h2c_port0_tdata,
   input wire   [64*1-1:0] s_axis_qdma_h2c_port0_tkeep,
@@ -34,7 +34,7 @@ module stream_switch_u280_wrapper (
   input wire   [48*1-1:0] s_axis_qdma_h2c_port1_tuser,
   output wire     [1-1:0] s_axis_qdma_h2c_port1_tready,
 
-
+  // To PCIe
   output wire     [1-1:0] m_axis_qdma_c2h_port0_tvalid,
   output wire [512*1-1:0] m_axis_qdma_c2h_port0_tdata,
   output wire  [64*1-1:0] m_axis_qdma_c2h_port0_tkeep,
@@ -49,7 +49,7 @@ module stream_switch_u280_wrapper (
   output wire  [48*1-1:0] m_axis_qdma_c2h_port1_tuser,
   input wire      [1-1:0] m_axis_qdma_c2h_port1_tready,
 
-
+  // To wire
   output wire     [1-1:0] m_axis_adap_tx_250mhz_port0_tvalid,
   output wire [512*1-1:0] m_axis_adap_tx_250mhz_port0_tdata,
   output wire  [64*1-1:0] m_axis_adap_tx_250mhz_port0_tkeep,
@@ -64,7 +64,7 @@ module stream_switch_u280_wrapper (
   output wire  [48*1-1:0] m_axis_adap_tx_250mhz_port1_tuser,
   input wire      [1-1:0] m_axis_adap_tx_250mhz_port1_tready,
 
-
+  // From wire
   input wire      [1-1:0] s_axis_adap_rx_250mhz_port0_tvalid,
   input wire  [512*1-1:0] s_axis_adap_rx_250mhz_port0_tdata,
   input wire   [64*1-1:0] s_axis_adap_rx_250mhz_port0_tkeep,

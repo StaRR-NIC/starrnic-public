@@ -99,6 +99,9 @@ struct headers {
 
 // User metadata structure
 struct metadata {
+    bit<16> tuser_size;
+    bit<16> tuser_src;
+    bit<16> tuser_dst;
     bit<16> parsed_port;
     bit<2> is_udp;
     bit<1> drop;
