@@ -26,11 +26,11 @@ fi
 # Remove
 if [[ $bridge_bdf != "" ]]; then
     echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/${EXTENDED_DEVICE_BDF1}/remove" > /dev/null
-    if [[ -n $EXTENDED_DEVICE_BDF2 ]] && [[ -e "/sys/bus/pci/devices/${bridge_bdf}/${EXTENDED_DEVICE_BDF2}" ]]; then
+    if [[ -n "${EXTENDED_DEVICE_BDF2:-}" ]] && [[ -e "/sys/bus/pci/devices/${bridge_bdf}/${EXTENDED_DEVICE_BDF2}" ]]; then
         echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/${EXTENDED_DEVICE_BDF2}/remove" > /dev/null
     fi
 else
-    echo "Could not find brigde_bdf for the device $EXTENDED_DEVICE_BDF1"
+    echo "Could not find bridge_bdf for the device $EXTENDED_DEVICE_BDF1"
     echo "If remove was called on the device already, then manually set bridge_bdf here and comment 'exit 1'."
 
     # bridge_bdf="0000:3a:00.0" # AU50  on n1
@@ -47,8 +47,9 @@ vivado -mode tcl -source ./program_fpga.tcl \
 # Rescan
 echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/rescan" > /dev/null
 sudo setpci -s $EXTENDED_DEVICE_BDF1 COMMAND=0x02
-if [[ -n $EXTENDED_DEVICE_BDF2 ]]; then
+if [[ -n "${EXTENDED_DEVICE_BDF2:-}" ]]; then
     sudo setpci -s $EXTENDED_DEVICE_BDF2 COMMAND=0x02
 fi
 
 echo "program_fpga.sh completed"
+echo "Warm reboot machine if the machine hasn't been warm reboooted after loading a open nic bitstream."
