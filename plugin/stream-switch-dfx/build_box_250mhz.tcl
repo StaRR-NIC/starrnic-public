@@ -26,8 +26,10 @@ read_verilog -quiet stream_switch_address_map.v
 # source stream_switch_axis_switch_combiner_axilite.tcl
 source axis_switch_combiner_tdest.tcl
 source axis_switch_splitter_axilite.tcl
+source ila_0_p4.tcl
 
 read_verilog -quiet -sv stream_switch_dfx.sv
+
 if {!$pr} {
     source pkt_size_counter/build_rm.tcl
 }

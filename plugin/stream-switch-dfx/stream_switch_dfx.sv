@@ -272,6 +272,43 @@ module stream_switch_dfx #(
       .s_axi_wvalid    (axil_p4hdr_wvalid)                                 // input wire s_axi_wvalid
     );
 
+    ila_0_p4 ila_inst (
+      .clk(axis_aclk),
+      .probe0(axis_aclk),
+      .probe1(axis_aresetn),
+      .probe2(axil_aclk),
+      .probe3(axil_aresetn),
+
+      .probe4({s_axis_adap_rx_250mhz_tuser_size[`getvec(16, i)],
+        s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],
+        s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],
+      }),
+      .probe5(19'b0),
+      .probe6(s_axis_adap_rx_250mhz_tvalid[i] &&
+                        s_axis_adap_rx_250mhz_tready[i] &&
+                        s_axis_adap_rx_250mhz_tlast[i]
+      ),
+
+      .probe7({axis_p4hdrout_tuser[15:0],
+        axis_p4hdrout_tuser[31:16],
+        axis_p4hdrout_tuser[47:32],
+      }),
+      .probe8(user_metadata_out),
+      .probe9(user_metadata_out_valid),
+
+      .probe10(s_axis_adap_rx_250mhz_tdata[`getvec(512, i)]),
+      .probe11(s_axis_adap_rx_250mhz_tkeep[`getvec(64, i)]),
+      .probe12(s_axis_adap_rx_250mhz_tlast[i]),
+      .probe13(s_axis_adap_rx_250mhz_tvalid[i]),
+      .probe14(s_axis_adap_rx_250mhz_tready[i]),
+
+      .probe15(axis_p4hdrout_tdata),
+      .probe16(axis_p4hdrout_tkeep),
+      .probe17(axis_p4hdrout_tlast),
+      .probe18(axis_p4hdrout_tvalid),
+      .probe19(axis_p4hdrout_tready),
+    );
+
     wire     [1-1:0] axis_ppl_tready;
     wire     [1-1:0] axis_ppl_tvalid;
     wire [512*1-1:0] axis_ppl_tdata;
