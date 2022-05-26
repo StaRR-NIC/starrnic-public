@@ -281,17 +281,17 @@ module stream_switch_dfx #(
 
       .probe4({s_axis_adap_rx_250mhz_tuser_size[`getvec(16, i)],
         s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],
-        s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],
+        s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)]
       }),
       .probe5(19'b0),
       .probe6(s_axis_adap_rx_250mhz_tvalid[i] &&
-                        s_axis_adap_rx_250mhz_tready[i] &&
-                        s_axis_adap_rx_250mhz_tlast[i]
+        s_axis_adap_rx_250mhz_tready[i] &&
+        s_axis_adap_rx_250mhz_tlast[i]
       ),
 
       .probe7({axis_p4hdrout_tuser[15:0],
         axis_p4hdrout_tuser[31:16],
-        axis_p4hdrout_tuser[47:32],
+        axis_p4hdrout_tuser[47:32]
       }),
       .probe8(user_metadata_out),
       .probe9(user_metadata_out_valid),
@@ -306,7 +306,7 @@ module stream_switch_dfx #(
       .probe16(axis_p4hdrout_tkeep),
       .probe17(axis_p4hdrout_tlast),
       .probe18(axis_p4hdrout_tvalid),
-      .probe19(axis_p4hdrout_tready),
+      .probe19(axis_p4hdrout_tready)
     );
 
     wire     [1-1:0] axis_ppl_tready;

@@ -3,7 +3,8 @@
 # Works for au280 and u50
 sudo rmmod onic.ko
 
-if [[ $# -ne 2 ]] || [[ -z EXTENDED_DEVICE_BDF1 ]] || [[ -z $XILINX_VIVADO ]]; then
+echo $#
+if [[ $# -le 1 ]] || [[ -z EXTENDED_DEVICE_BDF1 ]] || [[ -z $XILINX_VIVADO ]]; then
     echo "Usage: program_device.sh BITSTREAM_PATH BOARD"
     echo "Please export EXTENDED_DEVICE_BDF1 and EXTENDED_DEVICE_BDF2 (if needed for 2 port boards)"
     echo "Please load vivado into system path."
@@ -16,6 +17,7 @@ set -x
 bridge_bdf=""
 bitstream_path=$1
 board=$2
+probes_path="${3:-}"
 
 # Infer bridge
 if [ -e "/sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1" ]; then
@@ -42,7 +44,8 @@ fi
 # Program fpga
 vivado -mode tcl -source ./program_fpga.tcl \
     -tclargs -board $board \
-    -bitstream_path $bitstream_path
+    -bitstream_path $bitstream_path \
+    -probes_path $probes_path
 
 # Rescan
 echo 1 | sudo tee "/sys/bus/pci/devices/${bridge_bdf}/rescan" > /dev/null
