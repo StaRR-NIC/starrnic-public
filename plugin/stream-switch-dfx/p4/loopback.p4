@@ -35,7 +35,7 @@ const bit<32> DST_IP1   = 0x0a00002d;     // 10.0.0.45
 const bit<16> DST_PORT1 = 16w60512;       // 60512
 const bit<48> DST_MAC1  = 0x000a35029d2d; // 00:0a:35:02:9d:2d
 
- // N5, port 0
+// N5, port 0
 const bit<32> DST_IP2   = 0x0a00002f;     // 10.0.0.47
 const bit<16> DST_PORT2 = 16w60513;       // 60513
 const bit<48> DST_MAC2  = 0x000a35029d2f; // 00:0a:35:02:9d:2f

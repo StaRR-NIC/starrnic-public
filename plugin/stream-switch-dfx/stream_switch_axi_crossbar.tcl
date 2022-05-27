@@ -19,7 +19,7 @@ set axi_crossbar stream_switch_axi_crossbar
 create_ip -name axi_crossbar -vendor xilinx.com -library ip -module_name $axi_crossbar
 set_property -dict { 
     CONFIG.ADDR_RANGES {1}
-    CONFIG.NUM_MI {3}
+    CONFIG.NUM_MI {4}
     CONFIG.PROTOCOL {AXI4LITE}
     CONFIG.CONNECTIVITY_MODE {SASD}
     CONFIG.R_REGISTER {1}
