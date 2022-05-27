@@ -199,9 +199,10 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
         "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
         .format(control_reg.data, mi_mux1.data, mi_mux2.data))
 
-    # configure splitter master1 to get traffic from slave
-    tb.log.info("Configuring splitter master1")
-    await tb.control.write(0x0040 + base, b'\x00')
+    # configure splitter master2 to get traffic from slave
+    tb.log.info("Configuring master2")
+    await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80') # disable master1
+    await tb.control.write(0x0044 + base, b'\x00')
     await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
     await tb.control.read(0x0040 + base, 4)  # check configuration
 
@@ -229,6 +230,11 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     for i, pkt in enumerate(packets[:-1]):
         tb.log.info("Checking port 1 with UDP pkt idx {}, port {}".format(i, pkt.dport))
         await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], pkt, *expectations[i])
+
+    bytes_sent_measured = await tb.control.read(dp_base, 4)
+    int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
+    tb.log.info("Measured pkt size: {}".format(int_measured))
+    assert len(packets[-2]) == int_measured # We sent using different path
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)
