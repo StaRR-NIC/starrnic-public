@@ -14,6 +14,8 @@
 // --------------------------------------------------
 //   0x02000   |  0x02FFF   |  P4 hdr (12 bits)
 // --------------------------------------------------
+//   0x03000   |  0x03FFF   |  P4 reg (12 bits)
+// --------------------------------------------------
 //   0x40000   |  0x7FFFF   |  Control path (connected to p2p or dp) (18 bits)
 // --------------------------------------------------
 
@@ -90,6 +92,23 @@ module stream_switch_address_map (
   input   [1:0] m_axil_p4hdr_rresp,
   output        m_axil_p4hdr_rready,
 
+  output        m_axil_p4reg_awvalid,
+  output [31:0] m_axil_p4reg_awaddr,
+  input         m_axil_p4reg_awready,
+  output        m_axil_p4reg_wvalid,
+  output [31:0] m_axil_p4reg_wdata,
+  input         m_axil_p4reg_wready,
+  input         m_axil_p4reg_bvalid,
+  input   [1:0] m_axil_p4reg_bresp,
+  output        m_axil_p4reg_bready,
+  output        m_axil_p4reg_arvalid,
+  output [31:0] m_axil_p4reg_araddr,
+  input         m_axil_p4reg_arready,
+  input         m_axil_p4reg_rvalid,
+  input  [31:0] m_axil_p4reg_rdata,
+  input   [1:0] m_axil_p4reg_rresp,
+  output        m_axil_p4reg_rready,
+
   output        m_axil_dp_awvalid,
   output [31:0] m_axil_dp_awaddr,
   input         m_axil_dp_awready,
@@ -111,16 +130,18 @@ module stream_switch_address_map (
   input         aresetn
 );
 
-  localparam C_NUM_SLAVES  = 4;
+  localparam C_NUM_SLAVES = 5;
 
-  localparam C_SPLITTER_INDEX   = 0;
+  localparam C_SPLITTER_INDEX = 0;
   localparam C_COMBINER_INDEX = 1;
   localparam C_P4HDR_INDEX = 2;
-  localparam C_DP_INDEX = 3;
+  localparam C_P4REG_INDEX = 3;
+  localparam C_DP_INDEX = 4;
 
   localparam C_SPLITTER_BASE_ADDR   = 32'h0;
   localparam C_COMBINER_BASE_ADDR = 32'h1000;
   localparam C_P4HDR_BASE_ADDR = 32'h2000;
+  localparam C_P4REG_BASE_ADDR = 32'h3000;
   localparam C_DP_BASE_ADDR = 32'h40000;
 
   wire                  [31:0] axil_splitter_awaddr;
@@ -129,6 +150,8 @@ module stream_switch_address_map (
   wire                  [31:0] axil_combiner_araddr;
   wire                  [31:0] axil_p4hdr_awaddr;
   wire                  [31:0] axil_p4hdr_araddr;
+  wire                  [31:0] axil_p4reg_awaddr;
+  wire                  [31:0] axil_p4reg_araddr;
   wire                  [31:0] axil_dp_awaddr;
   wire                  [31:0] axil_dp_araddr;
 
@@ -156,6 +179,8 @@ module stream_switch_address_map (
   assign axil_combiner_araddr                  = axil_araddr[C_COMBINER_INDEX*32 +: 32] - C_COMBINER_BASE_ADDR;
   assign axil_p4hdr_awaddr                     = axil_awaddr[C_P4HDR_INDEX*32 +: 32] - C_P4HDR_BASE_ADDR;
   assign axil_p4hdr_araddr                     = axil_araddr[C_P4HDR_INDEX*32 +: 32] - C_P4HDR_BASE_ADDR;
+  assign axil_p4reg_awaddr                     = axil_awaddr[C_P4REG_INDEX*32 +: 32] - C_P4REG_BASE_ADDR;
+  assign axil_p4reg_araddr                     = axil_araddr[C_P4REG_INDEX*32 +: 32] - C_P4REG_BASE_ADDR;
   assign axil_dp_awaddr                        = axil_awaddr[C_DP_INDEX*32 +: 32] - C_DP_BASE_ADDR;
   assign axil_dp_araddr                        = axil_araddr[C_DP_INDEX*32 +: 32] - C_DP_BASE_ADDR;
 
@@ -209,6 +234,23 @@ module stream_switch_address_map (
   assign axil_rdata[C_P4HDR_INDEX*32 +: 32]    = m_axil_p4hdr_rdata;
   assign axil_rresp[C_P4HDR_INDEX* 2 +: 2]     = m_axil_p4hdr_rresp;
   assign m_axil_p4hdr_rready                   = axil_rready[C_P4HDR_INDEX];
+
+  assign m_axil_p4reg_awvalid                  = axil_awvalid[C_P4REG_INDEX];
+  assign m_axil_p4reg_awaddr                   = axil_p4reg_awaddr;
+  assign axil_awready[C_P4REG_INDEX]           = m_axil_p4reg_awready;
+  assign m_axil_p4reg_wvalid                   = axil_wvalid[C_P4REG_INDEX];
+  assign m_axil_p4reg_wdata                    = axil_wdata[C_P4REG_INDEX*32 +: 32];
+  assign axil_wready[C_P4REG_INDEX]            = m_axil_p4reg_wready;
+  assign axil_bvalid[C_P4REG_INDEX]            = m_axil_p4reg_bvalid;
+  assign axil_bresp[C_P4REG_INDEX*2 +: 2]      = m_axil_p4reg_bresp;
+  assign m_axil_p4reg_bready                   = axil_bready[C_P4REG_INDEX];
+  assign m_axil_p4reg_arvalid                  = axil_arvalid[C_P4REG_INDEX];
+  assign m_axil_p4reg_araddr                   = axil_p4reg_araddr;
+  assign axil_arready[C_P4REG_INDEX]           = m_axil_p4reg_arready;
+  assign axil_rvalid[C_P4REG_INDEX]            = m_axil_p4reg_rvalid;
+  assign axil_rdata[C_P4REG_INDEX*32 +: 32]    = m_axil_p4reg_rdata;
+  assign axil_rresp[C_P4REG_INDEX* 2 +: 2]     = m_axil_p4reg_rresp;
+  assign m_axil_p4reg_rready                   = axil_rready[C_P4REG_INDEX];
 
   assign m_axil_dp_awvalid                     = axil_awvalid[C_DP_INDEX];
   assign m_axil_dp_awaddr                      = axil_dp_awaddr;

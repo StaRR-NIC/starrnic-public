@@ -205,15 +205,54 @@ module stream_switch_dfx #(
     // );
 
     // Update headers of pkts on CMAC1 RX
-    wire     [1-1:0] axis_p4hdrout_tready;
-    wire     [1-1:0] axis_p4hdrout_tvalid;
-    wire [512*1-1:0] axis_p4hdrout_tdata;
-    wire  [64*1-1:0] axis_p4hdrout_tkeep;
-    wire     [1-1:0] axis_p4hdrout_tlast;
-    wire  [48*1-1:0] axis_p4hdrout_tuser;
+    wire [47:0] smac;
+    wire [47:0] dmac;
+    wire [31:0] sip;
+    wire [31:0] dip;
+    wire [15:0] sport;
+    wire [15:0] dport;
+    wire [15:0] ipsum;
+
+    p4_hdr_register p4_hdr_register_inst(
+      .s_axil_awvalid (axil_p4reg_awvalid),
+      .s_axil_awaddr  (axil_p4reg_awaddr),
+      .s_axil_awready (axil_p4reg_awready),
+      .s_axil_wvalid  (axil_p4reg_wvalid),
+      .s_axil_wdata   (axil_p4reg_wdata),
+      .s_axil_wstrb   (4'b1111), // Dummy, only used for sim.
+      .s_axil_wready  (axil_p4reg_wready),
+      .s_axil_bvalid  (axil_p4reg_bvalid),
+      .s_axil_bresp   (axil_p4reg_bresp),
+      .s_axil_bready  (axil_p4reg_bready),
+      .s_axil_arvalid (axil_p4reg_arvalid),
+      .s_axil_araddr  (axil_p4reg_araddr),
+      .s_axil_arready (axil_p4reg_arready),
+      .s_axil_rvalid  (axil_p4reg_rvalid),
+      .s_axil_rdata   (axil_p4reg_rdata),
+      .s_axil_rresp   (axil_p4reg_rresp),
+      .s_axil_rready  (axil_p4reg_rready),
+
+      .axil_aclk      (axil_aclk),
+      .axil_aresetn   (axil_aresetn),
+
+      .smac           (smac),
+      .dmac           (dmac),
+      .sip            (sip),
+      .dip            (dip),
+      .sport          (sport),
+      .dport          (dport),
+      .ipsum          (ipsum)
+    );
+
+    wire      [1-1:0] axis_p4hdrout_tready;
+    wire      [1-1:0] axis_p4hdrout_tvalid;
+    wire  [512*1-1:0] axis_p4hdrout_tdata;
+    wire   [64*1-1:0] axis_p4hdrout_tkeep;
+    wire      [1-1:0] axis_p4hdrout_tlast;
+    wire   [48*1-1:0] axis_p4hdrout_tuser;
 
     wire              user_metadata_out_valid;
-    wire       [18:0] user_metadata_out;
+    wire [19+208-1:0] user_metadata_out;
     // wire       [15:0] parsed_port;
     // wire        [1:0] is_udp;
     // wire              drop_pkt;
@@ -227,8 +266,15 @@ module stream_switch_dfx #(
       .user_metadata_in({s_axis_adap_rx_250mhz_tuser_size[`getvec(16, i)], // can refer to the "vitis_net_p4_0_pkg.sv" to find the field indices
         s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],                   // and the order of each field within the metadata struct as used by the
         s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)],                   // generated RTL implementation
+        smac,
+        dmac,
+        sip,
+        dip,
+        sport,
+        dport,
+        ipsum,
         19'b0
-      }),                                                                  // input wire [19+47 : 0] user_metadata_in
+      }),                                                                  // input wire [19+208+47 : 0] user_metadata_in
       .user_metadata_in_valid(s_axis_adap_rx_250mhz_tvalid[i] &&
                         s_axis_adap_rx_250mhz_tready[i] &&
                         s_axis_adap_rx_250mhz_tlast[i]
@@ -283,7 +329,15 @@ module stream_switch_dfx #(
         s_axis_adap_rx_250mhz_tuser_src[`getvec(16, i)],
         s_axis_adap_rx_250mhz_tuser_dst[`getvec(16, i)]
       }),
-      .probe5(19'b0),
+      .probe5({
+        smac,
+        dmac,
+        sip,
+        dip,
+        sport,
+        dport,
+        ipsum
+      }),
       .probe6(s_axis_adap_rx_250mhz_tvalid[i] &&
         s_axis_adap_rx_250mhz_tready[i] &&
         s_axis_adap_rx_250mhz_tlast[i]

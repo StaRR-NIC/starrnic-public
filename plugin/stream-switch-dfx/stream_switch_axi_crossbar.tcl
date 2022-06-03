@@ -17,9 +17,9 @@
 # *************************************************************************
 set axi_crossbar stream_switch_axi_crossbar
 create_ip -name axi_crossbar -vendor xilinx.com -library ip -module_name $axi_crossbar
-set_property -dict { 
+set_property -dict {
     CONFIG.ADDR_RANGES {1}
-    CONFIG.NUM_MI {4}
+    CONFIG.NUM_MI {5}
     CONFIG.PROTOCOL {AXI4LITE}
     CONFIG.CONNECTIVITY_MODE {SASD}
     CONFIG.R_REGISTER {1}
@@ -90,9 +90,11 @@ set_property -dict {
     CONFIG.S00_SINGLE_THREAD {1}
     CONFIG.M01_A00_BASE_ADDR {0x0000000000001000}
     CONFIG.M02_A00_BASE_ADDR {0x0000000000002000}
-    CONFIG.M03_A00_BASE_ADDR {0x0000000000040000}
+    CONFIG.M03_A00_BASE_ADDR {0x0000000000003000}
+    CONFIG.M04_A00_BASE_ADDR {0x0000000000040000}
     CONFIG.M00_A00_ADDR_WIDTH {12}
     CONFIG.M01_A00_ADDR_WIDTH {12}
     CONFIG.M02_A00_ADDR_WIDTH {12}
-    CONFIG.M03_A00_ADDR_WIDTH {18}
+    CONFIG.M03_A00_ADDR_WIDTH {12}
+    CONFIG.M04_A00_ADDR_WIDTH {18}
 } [get_ips $axi_crossbar]

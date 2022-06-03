@@ -49,6 +49,23 @@ wire [31:0] axil_p4hdr_rdata;
 wire  [1:0] axil_p4hdr_rresp;
 wire        axil_p4hdr_rready;
 
+wire        axil_p4reg_awvalid;
+wire [31:0] axil_p4reg_awaddr;
+wire        axil_p4reg_awready;
+wire        axil_p4reg_wvalid;
+wire [31:0] axil_p4reg_wdata;
+wire        axil_p4reg_wready;
+wire        axil_p4reg_bvalid;
+wire  [1:0] axil_p4reg_bresp;
+wire        axil_p4reg_bready;
+wire        axil_p4reg_arvalid;
+wire [31:0] axil_p4reg_araddr;
+wire        axil_p4reg_arready;
+wire        axil_p4reg_rvalid;
+wire [31:0] axil_p4reg_rdata;
+wire  [1:0] axil_p4reg_rresp;
+wire        axil_p4reg_rready;
+
 wire        axil_dp_awvalid;
 wire [31:0] axil_dp_awaddr;
 wire        axil_dp_awready;
@@ -134,6 +151,23 @@ stream_switch_address_map address_map_inst (
   .m_axil_p4hdr_rdata     (axil_p4hdr_rdata),
   .m_axil_p4hdr_rresp     (axil_p4hdr_rresp),
   .m_axil_p4hdr_rready    (axil_p4hdr_rready),
+
+  .m_axil_p4reg_awvalid   (axil_p4reg_awvalid),
+  .m_axil_p4reg_awaddr    (axil_p4reg_awaddr),
+  .m_axil_p4reg_awready   (axil_p4reg_awready),
+  .m_axil_p4reg_wvalid    (axil_p4reg_wvalid),
+  .m_axil_p4reg_wdata     (axil_p4reg_wdata),
+  .m_axil_p4reg_wready    (axil_p4reg_wready),
+  .m_axil_p4reg_bvalid    (axil_p4reg_bvalid),
+  .m_axil_p4reg_bresp     (axil_p4reg_bresp),
+  .m_axil_p4reg_bready    (axil_p4reg_bready),
+  .m_axil_p4reg_arvalid   (axil_p4reg_arvalid),
+  .m_axil_p4reg_araddr    (axil_p4reg_araddr),
+  .m_axil_p4reg_arready   (axil_p4reg_arready),
+  .m_axil_p4reg_rvalid    (axil_p4reg_rvalid),
+  .m_axil_p4reg_rdata     (axil_p4reg_rdata),
+  .m_axil_p4reg_rresp     (axil_p4reg_rresp),
+  .m_axil_p4reg_rready    (axil_p4reg_rready),
 
   .m_axil_dp_awvalid   (axil_dp_awvalid),
   .m_axil_dp_awaddr    (axil_dp_awaddr),

@@ -31,13 +31,15 @@ module p4_hdr_register (
   output reg [15:0] ipsum
 );
 
-  localparam REG_SMAC  = 12'h000;
-  localparam REG_DMAC  = 12'h008;
-  localparam REG_SIP   = 12'h010;
-  localparam REG_DIP   = 12'h014;
-  localparam REG_SPORT = 12'h018;
-  localparam REG_DPORT = 12'h01C;
-  localparam REG_IPSUM = 12'h020;
+  localparam REG_SMAC_LOW  = 12'h000;
+  localparam REG_SMAC_HIGH = 12'h004;
+  localparam REG_DMAC_LOW  = 12'h008;
+  localparam REG_DMAC_HIGH = 12'h00C;
+  localparam REG_SIP       = 12'h010;
+  localparam REG_DIP       = 12'h014;
+  localparam REG_SPORT     = 12'h018;
+  localparam REG_DPORT     = 12'h01C;
+  localparam REG_IPSUM     = 12'h020;
 
   localparam C_ADDR_W = 12;
   wire                reg_en;
@@ -83,12 +85,84 @@ module p4_hdr_register (
   always @(posedge axil_aclk) begin
     if(~axil_aresetn) begin
       // set default values
+      smac <= 48'b0;
+      dmac <= 48'b0;
+      sip <= 32'b0;
+      dip <= 32'b0;
+      sport <= 16'b0;
+      dport <= 16'b0;
+      ipsum <= 16'b0;
     end
+
     else if (reg_en && reg_we) begin
       // write to registers using reg_din
+      case (reg_addr)
+        REG_SMAC_LOW: begin
+          smac[31:0] <= reg_din[31:0];
+        end
+        REG_SMAC_HIGH: begin
+          smac[47:32] <= reg_din[15:0];
+        end
+        REG_DMAC_LOW: begin
+          dmac[31:0] <= reg_din[31:0];
+        end
+        REG_DMAC_HIGH: begin
+          dmac[47:32] <= reg_din[15:0];
+        end
+        REG_SIP: begin
+          sip <= reg_din[31:0];
+        end
+        REG_DIP: begin
+          dip <= reg_din[31:0];
+        end
+        REG_SPORT: begin
+          sport <= reg_din[15:0];
+        end
+        REG_DPORT: begin
+          sport <= reg_din[15:0];
+        end
+        REG_IPSUM: begin
+          ipsum <= reg_din[15:0];
+        end
+      endcase
     end
+
     else if (reg_en && ~reg_we) begin
       // read into reg_dout
+      case (reg_addr)
+        REG_SMAC_LOW: begin
+          reg_dout[31:0] <= smac[31:0];
+        end
+        REG_SMAC_HIGH: begin
+          reg_dout[15:0] <= smac[47:32];
+          reg_dout[31:16] <= 16'b0;
+        end
+        REG_DMAC_LOW: begin
+          reg_dout[31:0] <= dmac[31:0];
+        end
+        REG_DMAC_HIGH: begin
+          reg_dout[15:0] <= dmac[47:32];
+          reg_dout[31:16] <= 16'b0;
+        end
+        REG_SIP: begin
+          reg_dout[31:0] <= sip;
+        end
+        REG_DIP: begin
+          reg_dout[31:0] <= dip;
+        end
+        REG_SPORT: begin
+          reg_dout[15:0] <= sport;
+          reg_dout[31:16] <= 48'b0;
+        end
+        REG_DPORT: begin
+          reg_dout[15:0] <= dport;
+          reg_dout[31:16] <= 48'b0;
+        end
+        REG_IPSUM: begin
+          reg_dout[15:0] <= ipsum;
+          reg_dout[31:16] <= 48'b0;
+        end
+      endcase
     end
   end
 
