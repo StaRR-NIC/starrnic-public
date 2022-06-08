@@ -252,7 +252,7 @@ module stream_switch_dfx #(
     wire   [48*1-1:0] axis_p4hdrout_tuser;
 
     wire              user_metadata_out_valid;
-    wire [19+208-1:0] user_metadata_out;
+    wire [18+208-1:0] user_metadata_out;
     // wire       [15:0] parsed_port;
     // wire        [1:0] is_udp;
     // wire              drop_pkt;
@@ -273,7 +273,7 @@ module stream_switch_dfx #(
         sport,
         dport,
         ipsum,
-        19'b0
+        18'b0
       }),                                                                  // input wire [19+208+47 : 0] user_metadata_in
       .user_metadata_in_valid(s_axis_adap_rx_250mhz_tvalid[i] &&
                         s_axis_adap_rx_250mhz_tready[i] &&

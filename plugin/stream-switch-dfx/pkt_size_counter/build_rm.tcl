@@ -2,6 +2,7 @@ set cur_dir [pwd]
 cd pkt_size_counter
 update_compile_order -fileset sources_1
 
+# We need to copy these IPs because they differ in their names.
 # TODO:(108anup) copy to project folder instaed of manage ip project folder. Otherwise idempotency lost.
 copy_ip -name axi_lite_clock_converter_rm_counter -dir ${build_dir}/vivado_ip [get_ips  axi_lite_clock_converter]
 update_compile_order -fileset sources_1

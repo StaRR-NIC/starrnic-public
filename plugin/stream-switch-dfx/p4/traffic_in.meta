@@ -1,3 +1,4 @@
-;
-;
-;
+metadata.tuser_size=0000 metadata.tuser_src=0000 metadata.tuser_dst=0000 metadata.smac=aabbccddeeff metadata.dmac=112233445566 metadata.sip=01020304 metadata.dip=06070809 metadata.sport=aabb metadata.dport=ccdd metadata.ipsum=eeff metadata.parsed_dport=0000 metadata.is_udp=00 metadata.drop=00 ;
+metadata.tuser_size=0000 metadata.tuser_src=0000 metadata.tuser_dst=0000 metadata.smac=aabbccddeeff metadata.dmac=112233445566 metadata.sip=01020304 metadata.dip=06070809 metadata.sport=aabb metadata.dport=ccdd metadata.ipsum=eeff metadata.parsed_dport=0000 metadata.is_udp=00 metadata.drop=00 ;
+metadata.tuser_size=0000 metadata.tuser_src=0000 metadata.tuser_dst=0000 metadata.smac=aabbccddeeff metadata.dmac=112233445566 metadata.sip=01020304 metadata.dip=06070809 metadata.sport=aabb metadata.dport=ccdd metadata.ipsum=eeff metadata.parsed_dport=0000 metadata.is_udp=00 metadata.drop=00 ;
+metadata.tuser_size=0000 metadata.tuser_src=0000 metadata.tuser_dst=0000 metadata.smac=aabbccddeeff metadata.dmac=112233445566 metadata.sip=01020304 metadata.dip=06070809 metadata.sport=aabb metadata.dport=ccdd metadata.ipsum=eeff metadata.parsed_dport=0000 metadata.is_udp=00 metadata.drop=00 ;

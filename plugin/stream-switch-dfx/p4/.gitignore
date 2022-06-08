@@ -1,4 +1,7 @@
-loopback.json
+*.json
 traffic_out.meta
 traffic_out.user
 traffic_out.pcap
+n5_out.meta
+n5_out.user
+n5_out.pcap

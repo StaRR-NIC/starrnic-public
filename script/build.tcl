@@ -365,42 +365,6 @@ read_xdc -unmanaged ${constr_dir}/${board}/pins.xdc
 read_xdc -unmanaged ${constr_dir}/${board}/timing.xdc
 read_xdc ${constr_dir}/${board}/general.xdc
 
-if {$sim} {
-    # Generate simulation libraries
-    # compile_simlib -simulator modelsim \
-    #   -simulator_exec_path {/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64} \
-    #   -family all -language all -library all \
-    #   -dir {/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib/modelsim}
-    # set ${sim_params(-sim_lib_path)} "/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib"
-    # set ${sim_params(-sim_path)} "/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64"
-
-    # set sim_lib_path ${sim_params(-sim_lib_path)}
-    set modelsim_lib_path ${sim_params(-sim_lib_path)}/modelsim
-    if {[file exists ${modelsim_lib_path}]} {
-        puts "Skipping compilation of simulation libraries as directory ${modelsim_lib_path} exists."
-    } else {
-        puts "Compiling simulation libraries in directory ${modelsim_lib_path}."
-        compile_simlib -simulator modelsim -simulator_exec_path ${sim_params(-sim_path)} \
-            -family all -language all -library all \
-            -dir ${modelsim_lib_path}
-    }
-
-    # Export simulation
-    set_property target_simulator ModelSim [current_project]
-    set_property top $sim_params(-sim_top) [get_filesets sim_1]
-    set_property top_lib xil_defaultlib [get_filesets sim_1]
-    set_property compxlib.modelsim_compiled_library_dir ${modelsim_lib_path} [current_project]
-    launch_simulation -scripts_only
-
-    # set sim_dir [file normalize ${root_dir}/sim_build/${build_name}/behav]
-    # export_simulation -lib_map_path ${modelsim_lib_path} -absolute_path \
-    #     -directory ${sim_dir} \
-    #     -simulator modelsim  \
-    #     -ip_user_files_dir ${top_build_dir}/${top}.ip_user_files \
-    #     -ipstatic_source_dir ${${top_build_dir}}/${top}.ip_user_files/ipstatic \
-    #     -use_ip_compiled_libs
-}
-
 # Read user plugin files
 set include_dirs [get_property include_dirs [current_fileset]]
 foreach freq [list 250mhz 322mhz] {
@@ -435,6 +399,43 @@ if {$pr} {
         source pr_flow.tcl
     }
     cd $script_dir
+}
+
+# Simulate design
+if {$sim} {
+    # Generate simulation libraries
+    # compile_simlib -simulator modelsim \
+    #   -simulator_exec_path {/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64} \
+    #   -family all -language all -library all \
+    #   -dir {/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib/modelsim}
+    # set ${sim_params(-sim_lib_path)} "/home/ubuntu/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib"
+    # set ${sim_params(-sim_path)} "/home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64"
+
+    # set sim_lib_path ${sim_params(-sim_lib_path)}
+    set modelsim_lib_path ${sim_params(-sim_lib_path)}/modelsim
+    if {[file exists ${modelsim_lib_path}]} {
+        puts "Skipping compilation of simulation libraries as directory ${modelsim_lib_path} exists."
+    } else {
+        puts "Compiling simulation libraries in directory ${modelsim_lib_path}."
+        compile_simlib -simulator modelsim -simulator_exec_path ${sim_params(-sim_path)} \
+            -family all -language all -library all \
+            -dir ${modelsim_lib_path}
+    }
+
+    # Export simulation
+    set_property target_simulator ModelSim [current_project]
+    set_property top $sim_params(-sim_top) [get_filesets sim_1]
+    set_property top_lib xil_defaultlib [get_filesets sim_1]
+    set_property compxlib.modelsim_compiled_library_dir ${modelsim_lib_path} [current_project]
+    launch_simulation -scripts_only
+
+    # set sim_dir [file normalize ${root_dir}/sim_build/${build_name}/behav]
+    # export_simulation -lib_map_path ${modelsim_lib_path} -absolute_path \
+    #     -directory ${sim_dir} \
+    #     -simulator modelsim  \
+    #     -ip_user_files_dir ${top_build_dir}/${top}.ip_user_files \
+    #     -ipstatic_source_dir ${${top_build_dir}}/${top}.ip_user_files/ipstatic \
+    #     -use_ip_compiled_libs
 }
 
 # Implement design

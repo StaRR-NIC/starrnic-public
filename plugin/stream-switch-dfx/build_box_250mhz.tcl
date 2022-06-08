@@ -28,6 +28,8 @@ source axis_switch_combiner_tdest.tcl
 source axis_switch_splitter_axilite.tcl
 source ila_0_p4.tcl
 
+source p4/vitis_net_p4_0_register.tcl
+read_verilog -quiet -sv p4_hdr_register.sv
 read_verilog -quiet -sv stream_switch_dfx.sv
 
 if {!$pr} {

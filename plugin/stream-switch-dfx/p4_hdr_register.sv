@@ -119,7 +119,7 @@ module p4_hdr_register (
           sport <= reg_din[15:0];
         end
         REG_DPORT: begin
-          sport <= reg_din[15:0];
+          dport <= reg_din[15:0];
         end
         REG_IPSUM: begin
           ipsum <= reg_din[15:0];
@@ -152,15 +152,15 @@ module p4_hdr_register (
         end
         REG_SPORT: begin
           reg_dout[15:0] <= sport;
-          reg_dout[31:16] <= 48'b0;
+          reg_dout[31:16] <= 16'b0;
         end
         REG_DPORT: begin
           reg_dout[15:0] <= dport;
-          reg_dout[31:16] <= 48'b0;
+          reg_dout[31:16] <= 16'b0;
         end
         REG_IPSUM: begin
           reg_dout[15:0] <= ipsum;
-          reg_dout[31:16] <= 48'b0;
+          reg_dout[31:16] <= 16'b0;
         end
       endcase
     end

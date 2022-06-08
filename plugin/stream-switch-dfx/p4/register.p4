@@ -7,6 +7,14 @@
  * Can also swap src/dst.
  */
 
+typedef bit<48>  MacAddr;
+typedef bit<32>  IPv4Addr;
+typedef bit<16>  UdpPort;
+
+const bit<16> VLAN_TYPE = 0x8100;
+const bit<16> IPV4_TYPE = 0x0800;
+const bit<8>  UDP_PROT  = 0x11;
+
 // ****************************************************************************** //
 // *************************** H E A D E R S  *********************************** //
 // ****************************************************************************** //
@@ -188,7 +196,7 @@ control MyProcessing(inout headers hdr,
         if (hdr.udp.isValid()) {
             meta.is_udp = 1;
             meta.drop = 0;
-            meta.parsed_port = hdr.udp.dst_port;
+            meta.parsed_dport = hdr.udp.dst_port;
             if(hdr.udp.dst_port == 16w62176) {
                 echo_packet();
             }

@@ -20,16 +20,16 @@ packets = [
 
 # src mac, dst mac, src ip, dst ip, src port, dst port, ipsum
 expectations = [
-    ('00:0a:35:bc:7a:bc', 'ff:0a:35:bc:7a:bc', '10.0.0.53', '10.0.0.40', 62176, 111, 0xf30c),
+    ('00:0a:35:bc:7a:bc', 'ff:0a:35:bc:7a:bc', '10.0.0.53', '10.0.0.40', 62176, 111, 0x6664),
     ('aa:bb:cc:dd:ee:ff', '11:22:33:44:55:66', '1.2.3.4', '6.7.8.9', 0xaabb, 0xccdd, 0xeeff),
 ]
 
 def mac2bytes(mac: str):
     assert len(mac) == 17
-    return int("0x{}".format(mac.replace(":", "")), 16).to_bytes(6, 'big')
+    return int("0x{}".format(mac.replace(":", "")), 16).to_bytes(6, 'little')
 
 def ip2bytes(ip: str):
-    return int(ipaddress.IPv4Address(ip)).to_bytes(4, 'big')
+    return int(ipaddress.IPv4Address(ip)).to_bytes(4, 'little')
 
 class TB:
     def __init__(self, dut):
@@ -107,7 +107,7 @@ async def check_connection(tb, source, sink, test_packet=packets[0]):
 
 
 async def check_connection_hdr(tb, source, sink, test_packet,
-                               src: str, dst: str, smac: str, dmac: str,
+                               smac: str, dmac: str, src: str, dst: str,
                                sport: int, dport: int, ipsum: int):
     # Pkts on source should arrive at sink
     test_frames = []
@@ -119,13 +119,14 @@ async def check_connection_hdr(tb, source, sink, test_packet,
         tb.log.info("Trying to recv frames")
         rx_frame = await sink.recv()
         rx_pkt = Ether(rx_frame.tdata)
+        rx_pkt.show()
         assert rx_pkt.src == smac
         assert rx_pkt.dst == dmac
         assert rx_pkt.sport == sport
         assert rx_pkt.dport == dport
         assert rx_pkt[IP].src == src
         assert rx_pkt[IP].dst == dst
-        assert rx_pkt[IP].ipsum == ipsum
+        assert rx_pkt[IP].chksum == ipsum
 
     assert sink.empty()
 
@@ -185,13 +186,16 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     tb.log.info("Checking port 1 with TCP")
     await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-1])
 
+    tb.log.info("Checking port 1 with UDP packet but with different port")
     # UDP packets with dst port not in [62176, 62177] should be dropped
     await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-2])
 
     # UDP dst port 62176 should be reflected back with swapped headers
+    tb.log.info("UDP dst port 62176 should be reflected back with swapped headers")
     await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], packets[0], *expectations[0])
 
     # Check if can read data plane registers from control path
+    tb.log.info("Checking data path registers.")
     bytes_sent_measured = await tb.control.read(dp_base, 4)
     int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
     tb.log.info("Measured pkt size: {}".format(int_measured))
@@ -210,15 +214,17 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await tb.control.write(0x014 + reg_base, ip2bytes(expectations[1][3]))
     dip = await tb.control.read(0x014 + reg_base, 4)
 
-    await tb.control.write(0x018 + reg_base, expectations[1][4].to_bytes(2, 'big'))
+    await tb.control.write(0x018 + reg_base, expectations[1][4].to_bytes(2, 'little'))
     sport = await tb.control.read(0x018 + reg_base, 2)
 
-    await tb.control.write(0x01C + reg_base, expectations[1][5].to_bytes(2, 'big'))
+    await tb.control.write(0x01C + reg_base, expectations[1][5].to_bytes(2, 'little'))
     dport = await tb.control.read(0x01C + reg_base, 2)
 
-    await tb.control.write(0x020 + reg_base, expectations[1][6].to_bytes(2, 'big'))
+    await tb.control.write(0x020 + reg_base, expectations[1][6].to_bytes(2, 'little'))
     ipsum = await tb.control.read(0x020 + reg_base, 2)
-    print("Set as: ", smac, dmac, sip, dip, sport, dport, ipsum)
+
+    tb.log.info("Set as: {}, {}, {}, {}, {}, {}, {}"
+                .format(smac.data, dmac.data, sip.data, dip.data, sport.data, dport.data, ipsum.data))
 
     await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], packets[1], *expectations[1])
 
