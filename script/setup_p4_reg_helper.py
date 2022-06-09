@@ -11,6 +11,11 @@ def ip2bytes(ip: str):
 cmd = "sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2"
 base = 0x103000
 
+# n3 port rx (1)
+srcmac = '00:0a:35:bd:11:be'
+srcip = '10.0.0.57'
+
+# n3 port tx (0)
 srcmac = '00:0a:35:dd:4b:c4'
 srcip = '10.0.0.55'
 
@@ -24,7 +29,7 @@ dstip = '10.0.0.45'
 
 sport = 64000
 dport = 64001
-ipchksum = 0xeb03
+ipchksum = 0x662e
 
 print("{} 0x{:X} w 0x{}".format(cmd, 0x000 + base, mac2bytes(srcmac)[-8:]))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x004 + base, mac2bytes(srcmac)[:4]))
@@ -35,3 +40,9 @@ print("{} 0x{:X} w 0x{}".format(cmd, 0x014 + base, ip2bytes(dstip)))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x018 + base, sport.to_bytes(2, 'big').hex()))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x01C + base, dport.to_bytes(2, 'big').hex()))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x020 + base, ipchksum.to_bytes(2, 'big').hex()))
+
+from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
+print("DUT RX")
+(Ether(src='00:0a:35:02:9d:2f', dst='00:0a:35:bd:11:be') / IP(id=0, src='10.0.0.47', dst='10.0.0.57') / UDP(sport=60512, dport=62177) / (b'\xa0'*64)).show2()
+print("DUT TX")
+(Ether(src=srcmac, dst=dstmac) / IP(id=0, src=srcip, dst=dstip) / UDP(sport=sport, dport=dport) / (b'\xa0'*64)).show2()
