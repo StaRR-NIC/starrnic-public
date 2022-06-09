@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Works for au280 and u50
-sudo rmmod onic.ko
-
 echo $#
 if [[ $# -le 1 ]] || [[ -z EXTENDED_DEVICE_BDF1 ]] || [[ -z $XILINX_VIVADO ]]; then
     echo "Usage: program_device.sh BITSTREAM_PATH BOARD"
@@ -18,6 +15,13 @@ bridge_bdf=""
 bitstream_path=$1
 board=$2
 probes_path="${3:-}"
+
+# Works for au280 and u50
+sudo ifconfig enp134s0f0 down
+if [[ -n "${EXTENDED_DEVICE_BDF2:-}" ]]; then
+    sudo ifconfig enp134s0f1 down
+fi
+sudo rmmod onic.ko
 
 # Infer bridge
 if [ -e "/sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1" ]; then
