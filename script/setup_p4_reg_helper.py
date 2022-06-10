@@ -11,6 +11,8 @@ def ip2bytes(ip: str):
 cmd = "sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2"
 base = 0x103000
 
+# ------------------------------------------
+# References
 # n3 port rx (1)
 srcmac = '00:0a:35:bd:11:be'
 srcip = '10.0.0.57'
@@ -27,9 +29,32 @@ dstip = '10.0.0.47'
 dstmac = '00:0a:35:02:9d:2d'
 dstip = '10.0.0.45'
 
+# ------------------------------------------
+# Throughput Experiment
+# n3 port tx (0)
+srcmac = '00:0a:35:dd:4b:c4'
+srcip = '10.0.0.55'
+
+# n5 port 1
+dstmac = '00:0a:35:02:9d:2d'
+dstip = '10.0.0.45'
+
 sport = 64000
 dport = 64001
-ipchksum = 0x662e
+ipchksum = 0x662c
+
+# ------------------------------------------
+# Latency Experiment
+srcmac = '00:0a:35:dd:4b:c4' # n3 tx (port 0), we keep mac different so that the switch does not learn a bad port to mac mapping.
+srcip = '10.0.0.57' # n3 rx (port 1), because the recver has this in socket
+
+# n5 port 0
+dstmac = '00:0a:35:02:9d:2f'
+dstip = '10.0.0.47'
+
+sport = 62177
+dport = 60512
+ipchksum = 0x662a
 
 print("{} 0x{:X} w 0x{}".format(cmd, 0x000 + base, mac2bytes(srcmac)[-8:]))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x004 + base, mac2bytes(srcmac)[:4]))
