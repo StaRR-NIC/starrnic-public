@@ -56,16 +56,16 @@ class TB:
                 dut, "s_axis_adap_rx_250mhz_port{}".format(port)),
             dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
             for port in [0, 1]]
-        self.sink_tx = [AxiStreamSink(
-            AxiStreamBus.from_prefix(
-                dut, "m_axis_adap_tx_250mhz_port{}".format(port)),
-            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
-            for port in [0, 1]]
-        self.sink_rx = [AxiStreamSink(
-            AxiStreamBus.from_prefix(
-                dut, "m_axis_qdma_c2h_port{}".format(port)),
-            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
-            for port in [0, 1]]
+        # self.sink_tx = [AxiStreamSink(
+        #     AxiStreamBus.from_prefix(
+        #         dut, "m_axis_adap_tx_250mhz_port{}".format(port)),
+        #     dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
+        #     for port in [0, 1]]
+        # self.sink_rx = [AxiStreamSink(
+        #     AxiStreamBus.from_prefix(
+        #         dut, "m_axis_qdma_c2h_port{}".format(port)),
+        #     dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
+        #     for port in [0, 1]]
         self.control = AxiLiteMaster(
             AxiLiteBus.from_prefix(dut, "s_axil"),
             dut.axil_aclk, dut.stream_switch_dfx_inst.axil_aresetn, reset_active_level=False)
@@ -73,8 +73,12 @@ class TB:
         # Probe
         # self.p4_ppl_sink = AxiStreamSink(
         #     AxiStreamBus.from_prefix(
-        #         dut.stream_switch_dfx_inst.tx_data_path, "axis_ppl"),
+        #         dut.stream_switch_dfx_inst.short_host, "axis_ppl"),
         #     dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
+        self.p4_ppl_sink = AxiStreamSink(
+            AxiStreamBus.from_prefix(
+                dut, "m_axis_adap_tx_250mhz_port{}".format(0)),
+            dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
 
     def set_idle_generator(self, generator=None):
         if generator:
@@ -83,8 +87,9 @@ class TB:
 
     def set_backpressure_generator(self, generator=None):
         if generator:
-            for sink_tx in self.sink_tx:
-                sink_tx.set_pause_generator(generator())
+            # for sink_tx in self.sink_tx:
+            #     sink_tx.set_pause_generator(generator())
+            self.p4_ppl_sink.set_pause_generator(generator())
 
     async def reset(self):
         self.dut.mod_rstn.setimmediatevalue(1)
@@ -209,30 +214,30 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
     await tb.control.read(0x0040 + base, 4)  # check configuration
 
-    # Should be able to send/recv on port 0
-    tb.log.info("Checking port 0 (TX)")
-    await check_connection(tb, tb.source_tx[0], tb.sink_tx[0])
-    tb.log.info("Checking port 0 (RX)")
-    await check_connection(tb, tb.source_rx[0], tb.sink_rx[0])
+    # # Should be able to send/recv on port 0
+    # tb.log.info("Checking port 0 (TX)")
+    # await check_connection(tb, tb.source_tx[0], tb.sink_tx[0])
+    # tb.log.info("Checking port 0 (RX)")
+    # await check_connection(tb, tb.source_rx[0], tb.sink_rx[0])
 
-    # Non udp packets should be dropped
-    tb.log.info("Checking port 1 (RX) with TCP")
-    await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-1])
+    # # Non udp packets should be dropped
+    # tb.log.info("Checking port 1 (RX) with TCP")
+    # await check_drop(tb, tb.source_rx[1], tb.p4_ppl_sink, packets[-1])
 
-    tb.log.info("Checking port 1 (RX) with UDP packet but with different port")
-    # UDP packets with dst port not in [62176, 62177] should be dropped
-    await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-2])
+    # tb.log.info("Checking port 1 (RX) with UDP packet but with different port")
+    # # UDP packets with dst port not in [62176, 62177] should be dropped
+    # await check_drop(tb, tb.source_rx[1], tb.p4_ppl_sink, packets[-2])
 
-    # UDP dst port 62176 should be reflected back with swapped headers
-    tb.log.info("UDP dst port 62176 should be reflected back with swapped headers")
-    await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], packets[0], *expectations[0])
+    # # UDP dst port 62176 should be reflected back with swapped headers
+    # tb.log.info("UDP dst port 62176 should be reflected back with swapped headers")
+    # await check_connection_hdr(tb, tb.source_rx[1], tb.p4_ppl_sink, packets[0], *expectations[0])
 
-    # Check if can read data plane registers from control path
-    tb.log.info("Checking data path registers.")
-    bytes_sent_measured = await tb.control.read(dp_base, 4)
-    int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
-    tb.log.info("Measured pkt size: {}".format(int_measured))
-    assert len(packets[0]) == int_measured # We sent using different path
+    # # Check if can read data plane registers from control path
+    # tb.log.info("Checking data path registers.")
+    # bytes_sent_measured = await tb.control.read(dp_base, 4)
+    # int_measured = int.from_bytes(bytes_sent_measured.data, 'little')
+    # tb.log.info("Measured pkt size: {}".format(int_measured))
+    # assert len(packets[0]) == int_measured # We sent using different path
 
     # UDP dst port 62177 should take headers from register
     await tb.control.write(0x000 + reg_base, mac2bytes(expectations[1][0]))
@@ -259,9 +264,9 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     tb.log.info("Set as: {}, {}, {}, {}, {}, {}, {}"
                 .format(smac.data, dmac.data, sip.data, dip.data, sport.data, dport.data, ipsum.data))
 
-    # await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], packets[1], *expectations[1])
+    # await check_connection_hdr(tb, tb.source_rx[1], tb.p4_ppl_sink, packets[1], *expectations[1])
 
-    await check_thr(tb, tb.source_rx[1], tb.sink_tx[0], thr_pkt1, thr_pkt2)
+    await check_thr(tb, tb.source_rx[1], tb.p4_ppl_sink, thr_pkt1, thr_pkt2)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

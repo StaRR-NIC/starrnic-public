@@ -18,6 +18,11 @@
 # read_verilog -quiet -sv pkt_size_counter.sv
 # read_verilog -quiet -sv pkt_size_counter5.sv
 
+# Verilog AXIS modules from https://github.com/alexforencich/verilog-axis/
+read_verilog -quiet verilog_axis/priority_encoder.v
+read_verilog -quiet verilog_axis/arbiter.v
+read_verilog -quiet verilog_axis/axis_arb_mux.v
+
 source stream_switch_axi_crossbar.tcl
 read_verilog -quiet stream_switch_address_map_inst.vh
 read_verilog -quiet starrnic_bypass.vh

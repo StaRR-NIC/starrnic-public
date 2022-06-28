@@ -136,7 +136,7 @@ module stream_switch_dfx #(
   end
   end
 
-  generate if (NUM_INTF == 2) begin: tx_data_path // for (genvar i = 1; i < NUM_INTF; i++) begin
+  generate if (NUM_INTF == 2) begin: short_host // for (genvar i = 1; i < NUM_INTF; i++) begin
     localparam i = 1;
     wire [47:0] axis_qdma_h2c_tuser;
     wire [47:0] axis_qdma_c2h_tuser;
@@ -412,7 +412,6 @@ module stream_switch_dfx #(
     wire  [64*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tkeep;
     wire     [SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tlast;
     wire  [48*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tuser;
-    reg      [SPLIT_COMBINE_PORT_COUNT-1:0] combiner_decode_error;
 
     // Combiner
     assign s_axis_qdma_h2c_tready[0]       = axis_combiner_tready[0];
@@ -429,9 +428,40 @@ module stream_switch_dfx #(
     assign axis_combiner_tlast[1+:1]       = axis_ppl_tlast;
     assign axis_combiner_tuser[48+:48]     = axis_ppl_tuser;
 
-    axis_switch_combiner_tdest combiner_inst (
-      .aclk           (axis_aclk),
-      .aresetn        (axis_aresetn),
+    // AXI-STREAM SWITCH IP
+    // reg      [SPLIT_COMBINE_PORT_COUNT-1:0] combiner_decode_error;
+    // axis_switch_combiner_tdest combiner_inst (
+    //   .aclk           (axis_aclk),
+    //   .aresetn        (axis_aresetn),
+
+    //   .s_axis_tready  (axis_combiner_tready),
+    //   .s_axis_tvalid  (axis_combiner_tvalid),
+    //   .s_axis_tdata   (axis_combiner_tdata),
+    //   .s_axis_tkeep   (axis_combiner_tkeep),
+    //   .s_axis_tlast   (axis_combiner_tlast),
+    //   .s_axis_tuser   (axis_combiner_tuser),
+
+    //   .m_axis_tvalid  (axis_qdma_h2c_p0_tvalid),
+    //   .m_axis_tdata   (axis_qdma_h2c_p0_tdata),
+    //   .m_axis_tkeep   (axis_qdma_h2c_p0_tkeep),
+    //   .m_axis_tlast   (axis_qdma_h2c_p0_tlast),
+    //   .m_axis_tuser   (axis_qdma_h2c_p0_tuser),
+    //   .m_axis_tready  (axis_qdma_h2c_p0_tready),
+
+    //   .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
+    //   .s_decode_err   (combiner_decode_error)
+    // );
+
+    axis_arb_mux #(
+      .S_COUNT (SPLIT_COMBINE_PORT_COUNT),
+      .DATA_WIDTH (512),
+      .USER_ENABLE (1),
+      .USER_WIDTH (48),
+      .ARB_TYPE_ROUND_ROBIN (1),
+      .ARB_LSB_HIGH_PRIORITY (0)
+    ) combiner_inst (
+      .clk            (axis_aclk),
+      .rst            (~axis_aresetn),
 
       .s_axis_tready  (axis_combiner_tready),
       .s_axis_tvalid  (axis_combiner_tvalid),
@@ -445,11 +475,16 @@ module stream_switch_dfx #(
       .m_axis_tkeep   (axis_qdma_h2c_p0_tkeep),
       .m_axis_tlast   (axis_qdma_h2c_p0_tlast),
       .m_axis_tuser   (axis_qdma_h2c_p0_tuser),
-      .m_axis_tready  (axis_qdma_h2c_p0_tready),
-
-      .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
-      .s_decode_err   (combiner_decode_error)
+      .m_axis_tready  (axis_qdma_h2c_p0_tready)
     );
+
+    // // Remove combiner
+    // assign axis_ppl_tready                = axis_qdma_h2c_p0_tready[0+:1];
+    // assign axis_qdma_h2c_p0_tvalid[0+:1]  = axis_ppl_tvalid;
+    // assign axis_qdma_h2c_p0_tdata[0+:512] = axis_ppl_tdata;
+    // assign axis_qdma_h2c_p0_tkeep[0+:64]  = axis_ppl_tkeep;
+    // assign axis_qdma_h2c_p0_tlast[0+:1]   = axis_ppl_tlast;
+    // assign axis_qdma_h2c_p0_tuser[0+:48]  = axis_ppl_tuser;
 
   end
   else begin

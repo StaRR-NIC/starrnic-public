@@ -77,8 +77,6 @@ wire  [64*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tkeep;
 wire     [SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tlast;
 wire  [48*SPLIT_COMBINE_PORT_COUNT-1:0] axis_combiner_tuser;
 
-reg      [SPLIT_COMBINE_PORT_COUNT-1:0] combiner_decode_error;
-
 // Concat/Deconcat
 // Splitter
 assign axis_splitter_tready[0+:1]    = axis_s2p2p_tready;
@@ -252,9 +250,40 @@ partition1_rm_intf partition1_rm_intf_inst (
 //   .aresetn       (axil_aresetn)
 // );
 
-axis_switch_combiner_tdest combiner_inst (
-  .aclk           (axis_aclk),
-  .aresetn        (axis_aresetn),
+// AXI-STREAM SWITCH IP
+// reg      [SPLIT_COMBINE_PORT_COUNT-1:0] combiner_decode_error;
+// axis_switch_combiner_tdest combiner_inst (
+//   .aclk           (axis_aclk),
+//   .aresetn        (axis_aresetn),
+
+//   .s_axis_tready  (axis_combiner_tready),
+//   .s_axis_tvalid  (axis_combiner_tvalid),
+//   .s_axis_tdata   (axis_combiner_tdata),
+//   .s_axis_tkeep   (axis_combiner_tkeep),
+//   .s_axis_tlast   (axis_combiner_tlast),
+//   .s_axis_tuser   (axis_combiner_tuser),
+
+//   .m_axis_tvalid  (m_axis_adap_tx_250mhz_tvalid[intf_idx]),
+//   .m_axis_tdata   (m_axis_adap_tx_250mhz_tdata[`getvec(512, intf_idx)]),
+//   .m_axis_tkeep   (m_axis_adap_tx_250mhz_tkeep[`getvec(64, intf_idx)]),
+//   .m_axis_tlast   (m_axis_adap_tx_250mhz_tlast[intf_idx]),
+//   .m_axis_tuser   (axis_adap_tx_250mhz_tuser),
+//   .m_axis_tready  (m_axis_adap_tx_250mhz_tready[intf_idx]),
+
+//   .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
+//   .s_decode_err   (combiner_decode_error)
+// );
+
+axis_arb_mux #(
+  .S_COUNT (SPLIT_COMBINE_PORT_COUNT),
+  .DATA_WIDTH (512),
+  .USER_ENABLE (1),
+  .USER_WIDTH (48),
+  .ARB_TYPE_ROUND_ROBIN (1),
+  .ARB_LSB_HIGH_PRIORITY (0)
+) combiner_inst (
+  .clk            (axis_aclk),
+  .rst            (~axis_aresetn),
 
   .s_axis_tready  (axis_combiner_tready),
   .s_axis_tvalid  (axis_combiner_tvalid),
@@ -268,10 +297,7 @@ axis_switch_combiner_tdest combiner_inst (
   .m_axis_tkeep   (m_axis_adap_tx_250mhz_tkeep[`getvec(64, intf_idx)]),
   .m_axis_tlast   (m_axis_adap_tx_250mhz_tlast[intf_idx]),
   .m_axis_tuser   (axis_adap_tx_250mhz_tuser),
-  .m_axis_tready  (m_axis_adap_tx_250mhz_tready[intf_idx]),
-
-  .s_req_suppress (2'b0), // Onehot encoding per slave - set high if you want to ignore arbitration of a slave.
-  .s_decode_err   (combiner_decode_error)
+  .m_axis_tready  (m_axis_adap_tx_250mhz_tready[intf_idx])
 );
 
 axi_lite_slave #(
