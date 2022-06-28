@@ -18,6 +18,10 @@ packets = [
     Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / TCP(sport=111, dport=62176) / (b'\xcc'*16)
 ]
 
+
+thr_pkt1 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xee'*18)
+thr_pkt2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xff'*18)
+
 # src mac, dst mac, src ip, dst ip, src port, dst port, ipsum
 expectations = [
     ('00:0a:35:bc:7a:bc', 'ff:0a:35:bc:7a:bc', '10.0.0.53', '10.0.0.40', 62176, 111, 0x6664),
@@ -66,6 +70,12 @@ class TB:
             AxiLiteBus.from_prefix(dut, "s_axil"),
             dut.axil_aclk, dut.stream_switch_dfx_inst.axil_aresetn, reset_active_level=False)
 
+        # Probe
+        # self.p4_ppl_sink = AxiStreamSink(
+        #     AxiStreamBus.from_prefix(
+        #         dut.stream_switch_dfx_inst.tx_data_path, "axis_ppl"),
+        #     dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn, reset_active_level=False)
+
     def set_idle_generator(self, generator=None):
         if generator:
             for source_tx in self.source_tx:
@@ -90,6 +100,27 @@ class TB:
         # await RisingEdge(self.dut.axil_aclk)
 
 
+
+async def check_thr(tb, source, sink, test_packet1, test_packet2):
+    # Pkts on source should arrive at sink
+    test_frames = []
+    test_frame1 = AxiStreamFrame(bytes(test_packet1), tuser=0)
+    test_frame2 = AxiStreamFrame(bytes(test_packet2), tuser=0)
+    for _ in range(512):
+        await source.send(test_frame1)
+        await source.send(test_frame2)
+        test_frames.append(test_frame1)
+        test_frames.append(test_frame2)
+    # tb.log.info("Frames sent")
+
+    tb.log.info("Trying to recv frames")
+    for test_frame in test_frames:
+        rx_frame = await sink.recv()
+        assert len(rx_frame.tdata) == len(test_frame.tdata)
+
+    assert sink.empty()
+
+
 async def check_connection(tb, source, sink, test_packet=packets[0]):
     # Pkts on source should arrive at sink
     test_frames = []
@@ -99,9 +130,10 @@ async def check_connection(tb, source, sink, test_packet=packets[0]):
     # tb.log.info("Frames sent")
 
     for test_frame in test_frames:
-        tb.log.info("Trying to recv frames")
+        tb.log.info("Trying to recv frames from: {}".format(sink))
         rx_frame = await sink.recv()
         assert len(rx_frame.tdata) == len(test_frame.tdata)
+        tb.log.info("Len check done for sink: {}".format(sink))
 
     assert sink.empty()
 
@@ -178,15 +210,16 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await tb.control.read(0x0040 + base, 4)  # check configuration
 
     # Should be able to send/recv on port 0
-    tb.log.info("Checking port 0")
+    tb.log.info("Checking port 0 (TX)")
     await check_connection(tb, tb.source_tx[0], tb.sink_tx[0])
+    tb.log.info("Checking port 0 (RX)")
     await check_connection(tb, tb.source_rx[0], tb.sink_rx[0])
 
     # Non udp packets should be dropped
-    tb.log.info("Checking port 1 with TCP")
+    tb.log.info("Checking port 1 (RX) with TCP")
     await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-1])
 
-    tb.log.info("Checking port 1 with UDP packet but with different port")
+    tb.log.info("Checking port 1 (RX) with UDP packet but with different port")
     # UDP packets with dst port not in [62176, 62177] should be dropped
     await check_drop(tb, tb.source_rx[1], tb.sink_tx[0], packets[-2])
 
@@ -226,7 +259,9 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     tb.log.info("Set as: {}, {}, {}, {}, {}, {}, {}"
                 .format(smac.data, dmac.data, sip.data, dip.data, sport.data, dport.data, ipsum.data))
 
-    await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], packets[1], *expectations[1])
+    # await check_connection_hdr(tb, tb.source_rx[1], tb.sink_tx[0], packets[1], *expectations[1])
+
+    await check_thr(tb, tb.source_rx[1], tb.sink_tx[0], thr_pkt1, thr_pkt2)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)

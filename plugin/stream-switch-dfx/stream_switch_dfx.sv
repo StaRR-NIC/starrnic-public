@@ -136,7 +136,7 @@ module stream_switch_dfx #(
   end
   end
 
-  generate if (NUM_INTF == 2) begin // for (genvar i = 1; i < NUM_INTF; i++) begin
+  generate if (NUM_INTF == 2) begin: tx_data_path // for (genvar i = 1; i < NUM_INTF; i++) begin
     localparam i = 1;
     wire [47:0] axis_qdma_h2c_tuser;
     wire [47:0] axis_qdma_c2h_tuser;
