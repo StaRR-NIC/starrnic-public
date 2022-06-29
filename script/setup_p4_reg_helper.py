@@ -11,50 +11,54 @@ def ip2bytes(ip: str):
 cmd = "sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2"
 base = 0x103000
 
+experiment = "throughput"
+
 # ------------------------------------------
 # References
 # n3 port rx (1)
-srcmac = '00:0a:35:bd:11:be'
+n3_port1 = '00:0a:35:ed:19:13'
 srcip = '10.0.0.57'
 
 # n3 port tx (0)
-srcmac = '00:0a:35:dd:4b:c4'
+n3_port0 = '00:0a:35:8d:6f:b1'
 srcip = '10.0.0.55'
 
 # n5 port 0
-dstmac = '00:0a:35:02:9d:2f'
+n5_port0 = '00:0a:35:02:9d:2f'
 dstip = '10.0.0.47'
 
 # n5 port 1
-dstmac = '00:0a:35:02:9d:2d'
+n5_port1 = '00:0a:35:02:9d:2d'
 dstip = '10.0.0.45'
 
 # ------------------------------------------
 # Throughput Experiment
 # n3 port tx (0)
-srcmac = '00:0a:35:dd:4b:c4'
+srcmac = n3_port0
 srcip = '10.0.0.55'
 
 # n5 port 1
-dstmac = '00:0a:35:02:9d:2d'
+dstmac = n5_port1
 dstip = '10.0.0.45'
 
 sport = 64000
 dport = 64001
-ipchksum = 0x662c
+ipchksum = 0x662e
 
 # ------------------------------------------
 # Latency Experiment
-srcmac = '00:0a:35:dd:4b:c4' # n3 tx (port 0), we keep mac different so that the switch does not learn a bad port to mac mapping.
-srcip = '10.0.0.57' # n3 rx (port 1), because the recver has this in socket
+if(experiment == "latency"):
+    # ^^^ n3 tx (port 0), we keep mac different so that the switch
+    # does not learn a bad port to mac mapping.
+    srcip = '10.0.0.57'  # n3 rx (port 1), because the recver has this in socket
 
-# n5 port 0
-dstmac = '00:0a:35:02:9d:2f'
-dstip = '10.0.0.47'
+    # n5 port 0
+    dstmac = n5_port0
+    dstip = '10.0.0.47'
 
-sport = 62177
-dport = 60512
-ipchksum = 0x662a
+    sport = 62177
+    dport = 60512
+    ipchksum = 0x662a
 
 print("{} 0x{:X} w 0x{}".format(cmd, 0x000 + base, mac2bytes(srcmac)[-8:]))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x004 + base, mac2bytes(srcmac)[:4]))
