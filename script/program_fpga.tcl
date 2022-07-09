@@ -6,8 +6,9 @@
 # }
 
 # Directory variables
-set root_dir [file normalize ..]
-set script_dir ${root_dir}/script
+set script_path [file normalize [info script]]
+set script_dir [file dirname $script_path]
+set root_dir [file dirname $script_dir]
 
 # Loading options
 #   bitstream_path   Path to the bitstream

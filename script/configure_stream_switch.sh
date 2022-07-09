@@ -16,9 +16,9 @@ START_DIR=$PWD
 cd $OPEN_NIC_DRIVER
 sudo insmod onic.ko
 sudo ifconfig $STARRNIC_IFACE1 $STARRNIC_IP1/24 up
-if [[ -n $STARRNIC_IFACE2 ]] && [[ -n $STARRNIC_IP2 ]]; then
-    sudo ifconfig $STARRNIC_IFACE2 $STARRNIC_IP2/24 up
-fi
+# if [[ -n $STARRNIC_IFACE2 ]] && [[ -n $STARRNIC_IP2 ]]; then
+#     sudo ifconfig $STARRNIC_IFACE2 $STARRNIC_IP2/24 up
+# fi
 
 # Read temperature
 sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x10400
