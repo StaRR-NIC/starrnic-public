@@ -16,11 +16,11 @@ experiment = "throughput"
 # ------------------------------------------
 # References
 # n3 port rx (1)
-n3_port1 = '00:0a:35:ed:19:13'
+n3_port1 = "00:0a:35:ec:b9:9e"  # "00:0a:35:6e:dc:b4"
 srcip = '10.0.0.57'
 
 # n3 port tx (0)
-n3_port0 = '00:0a:35:8d:6f:b1'
+n3_port0 = "00:0a:35:23:1d:87"  # "00:0a:35:72:7b:90"
 srcip = '10.0.0.55'
 
 # n5 port 0
