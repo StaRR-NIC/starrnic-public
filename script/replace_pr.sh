@@ -18,11 +18,7 @@ set -Eeuo pipefail
 
 partial_bitstream=$1
 board=$2
-probes_path=""
-
-if [[ -n "${3:-}" ]]; then
-    probes_path=$3
-fi
+probes_path="${3:-}"
 
 bypass_region () {
     echo "Bypassing counter"
