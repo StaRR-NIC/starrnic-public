@@ -183,6 +183,34 @@ async def check_drop(tb, source, sink, drop_pkt):
     assert sink.empty()
 
 
+async def read_switch_config(tb, base):
+    tb.log.info("Sending control read command")
+    control_reg = await tb.control.read(0x0000 + base, 4)
+    mi_mux1 = await tb.control.read(0x0040 + base, 4)
+    mi_mux2 = await tb.control.read(0x0044 + base, 4)
+    tb.log.info(
+        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
+        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
+
+
+async def connect_region(tb, base):
+    tb.log.info("Configuring master2")
+    await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80')  # disable master1
+    await tb.control.write(0x0044 + base, b'\x00')              # enable master 2
+    await tb.control.write(0x0000 + base, b'\x02')              # commit configuration
+    await tb.control.read(0x0040 + base, 4)                     # check configuration (m1)
+    await tb.control.read(0x0044 + base, 4)                     # check configuration (m2)
+
+
+async def bypass_region(tb, base):
+    tb.log.info("Configuring master1")
+    await tb.control.write(0x0040 + base, b'\x00')              # enable master1
+    await tb.control.write(0x0044 + base, b'\x00\x00\x00\x80')  # disable master2
+    await tb.control.write(0x0000 + base, b'\x02')              # commit configuration
+    await tb.control.read(0x0040 + base, 4)                     # check configuration (m1)
+    await tb.control.read(0x0044 + base, 4)                     # check configuration (m2)
+
+
 async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     tb = TB(dut)
@@ -196,23 +224,12 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     reg_base = 0x03000
     dp_base = 0x40000
 
-    dut.log.info( "Sending control read command")
-
     # from remote_pdb import RemotePdb; rpdb = RemotePdb("127.0.0.1", 4000)
     # remote_pdb.set_trace()
-    control_reg = await tb.control.read(0x0000 + base, 4)
-    mi_mux1 = await tb.control.read(0x0040 + base, 4)
-    mi_mux2 = await tb.control.read(0x0044 + base, 4)
-    dut.log.info(
-        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
-        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
+    await read_switch_config(tb, base)
 
     # configure splitter master2 to get traffic from slave
-    tb.log.info("Configuring master2")
-    await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80') # disable master1
-    await tb.control.write(0x0044 + base, b'\x00')
-    await tb.control.write(0x0000 + base, b'\x02')  # commit configuration
-    await tb.control.read(0x0040 + base, 4)  # check configuration
+    await connect_region(tb, base)
 
     # # Should be able to send/recv on port 0
     # tb.log.info("Checking port 0 (TX)")
