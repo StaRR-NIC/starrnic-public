@@ -137,7 +137,7 @@ async def check_thr(tb, source, sink, test_packet1, test_packet2):
     assert sink.empty()
 
 
-async def check_connection(tb, source, sink, test_packet=packets[0]):
+async def check_connection(tb: TB, source, sink, test_packet=packets[0]):
     # Pkts on source should arrive at sink
     test_frames = []
     test_frame = AxiStreamFrame(bytes(test_packet), tuser=0)
@@ -217,7 +217,7 @@ if(USE_DEMUX):
         await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
 
 else:
-    async def read_switch_config(tb, base):
+    async def read_switch_config(tb: TB, base):
         tb.log.info("Sending control read command")
         control_reg = await tb.control.read(0x0000 + base, 4)
         mi_mux1 = await tb.control.read(0x0040 + base, 4)

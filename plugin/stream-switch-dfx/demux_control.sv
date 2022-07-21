@@ -6,26 +6,26 @@ module demux_control # (
   parameter M_COUNT = 2,
   parameter CL_M_COUNT = $clog2(M_COUNT)
 ) (
-  input         s_axil_awvalid,
-  input  [31:0] s_axil_awaddr,
-  output        s_axil_awready,
-  input         s_axil_wvalid,
-  input  [31:0] s_axil_wdata,
-  input   [3:0] s_axil_wstrb, // Dummy, only used for sim.
-  output        s_axil_wready,
-  output        s_axil_bvalid,
-  output  [1:0] s_axil_bresp,
-  input         s_axil_bready,
-  input         s_axil_arvalid,
-  input  [31:0] s_axil_araddr,
-  output        s_axil_arready,
-  output        s_axil_rvalid,
-  output [31:0] s_axil_rdata,
-  output  [1:0] s_axil_rresp,
-  input         s_axil_rready,
+  input  wire        s_axil_awvalid,
+  input  wire [31:0] s_axil_awaddr,
+  output wire        s_axil_awready,
+  input  wire        s_axil_wvalid,
+  input  wire [31:0] s_axil_wdata,
+  input  wire  [3:0] s_axil_wstrb, // Dummy, only used for sim.
+  output wire        s_axil_wready,
+  output wire        s_axil_bvalid,
+  output wire  [1:0] s_axil_bresp,
+  input  wire        s_axil_bready,
+  input  wire        s_axil_arvalid,
+  input  wire [31:0] s_axil_araddr,
+  output wire        s_axil_arready,
+  output wire        s_axil_rvalid,
+  output wire [31:0] s_axil_rdata,
+  output wire  [1:0] s_axil_rresp,
+  input  wire        s_axil_rready,
 
-  input         axil_aclk,
-  input         axil_aresetn,
+  input  wire        axil_aclk,
+  input  wire        axil_aresetn,
 
   output reg [CL_M_COUNT-1:0] select_committed
 );

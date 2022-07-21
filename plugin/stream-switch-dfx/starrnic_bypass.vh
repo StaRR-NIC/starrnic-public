@@ -181,7 +181,7 @@ axis_demux #(
     .DATA_WIDTH (512),
     .DEST_ENABLE (1),
     .USER_ENABLE (1),
-    .USER_WIDTH (48),
+    .USER_WIDTH (48)
 ) splitter_inst (
   .clk           (axis_aclk),
   .rst           (~axis_aresetn),
