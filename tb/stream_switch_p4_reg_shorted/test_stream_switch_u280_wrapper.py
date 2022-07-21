@@ -8,6 +8,8 @@ from cocotb.regression import TestFactory
 from cocotb.triggers import RisingEdge
 from cocotbext.axi import (AxiLiteBus, AxiLiteMaster, AxiStreamBus,
                            AxiStreamFrame, AxiStreamSink, AxiStreamSource)
+from cocotb.utils import get_sim_time, get_sim_steps
+from cocotb.triggers import Timer
 
 from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
 
@@ -19,8 +21,8 @@ packets = [
 ]
 
 
-thr_pkt1 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xee'*18)
-thr_pkt2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xff'*18)
+thr_pkt1 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xee'*128)
+thr_pkt2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xff'*128)
 
 # src mac, dst mac, src ip, dst ip, src port, dst port, ipsum
 expectations = [
@@ -28,23 +30,30 @@ expectations = [
     ('aa:bb:cc:dd:ee:ff', '11:22:33:44:55:66', '1.2.3.4', '6.7.8.9', 0xaabb, 0xccdd, 0xeeff),
 ]
 
+
 def mac2bytes(mac: str):
     assert len(mac) == 17
     return int("0x{}".format(mac.replace(":", "")), 16).to_bytes(6, 'little')
 
+
 def ip2bytes(ip: str):
     return int(ipaddress.IPv4Address(ip)).to_bytes(4, 'little')
+
 
 class TB:
     def __init__(self, dut):
         self.dut = dut
+        self.axis_aclk_pd = 4  # ns, 250 Mhz
+        self.axil_aclk_pd = 8  # ns, 125 Mhz
 
         self.log = logging.getLogger("cocotb.tb")
         self.log.setLevel(logging.DEBUG)
         self.log.info("Got DUT: {}".format(dut))
 
-        cocotb.fork(Clock(dut.axis_aclk, 2, units="ns").start())
-        cocotb.fork(Clock(dut.axil_aclk, 4, units="ns").start())
+        cocotb.fork(Clock(
+            dut.axis_aclk, self.axis_aclk_pd, units="ns").start())
+        cocotb.fork(Clock(
+            dut.axil_aclk, self.axil_aclk_pd, units="ns").start())
 
         self.source_tx = [AxiStreamSource(
             AxiStreamBus.from_prefix(
@@ -105,13 +114,12 @@ class TB:
         # await RisingEdge(self.dut.axil_aclk)
 
 
-
 async def check_thr(tb, source, sink, test_packet1, test_packet2):
     # Pkts on source should arrive at sink
     test_frames = []
     test_frame1 = AxiStreamFrame(bytes(test_packet1), tuser=0)
     test_frame2 = AxiStreamFrame(bytes(test_packet2), tuser=0)
-    for _ in range(512):
+    for _ in range(128):
         await source.send(test_frame1)
         await source.send(test_frame2)
         test_frames.append(test_frame1)
@@ -121,7 +129,10 @@ async def check_thr(tb, source, sink, test_packet1, test_packet2):
     tb.log.info("Trying to recv frames")
     for test_frame in test_frames:
         rx_frame = await sink.recv()
-        assert len(rx_frame.tdata) == len(test_frame.tdata)
+        if(len(rx_frame.tdata) != len(test_frame.tdata)):
+            tb.log.error("Mismatch in frames")
+            await Timer(get_sim_steps(10, units="us"))
+            assert False
 
     assert sink.empty()
 
@@ -283,7 +294,36 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     # await check_connection_hdr(tb, tb.source_rx[1], tb.p4_ppl_sink, packets[1], *expectations[1])
 
-    await check_thr(tb, tb.source_rx[1], tb.p4_ppl_sink, thr_pkt1, thr_pkt2)
+    # await check_thr(tb, tb.source_rx[1], tb.p4_ppl_sink, thr_pkt1, thr_pkt2)
+    # sim_time = get_sim_time('ns')
+    # tb.log.info("Ran for {} ns".format(sim_time))
+
+    # * We want to check that packets are transmitted while the PR region maybe
+    #   bypassed or connected freely.
+    check_thr_coroutine = cocotb.fork(check_thr(
+        tb, tb.source_rx[1], tb.p4_ppl_sink, thr_pkt1, thr_pkt2))
+
+    for _ in range(100):
+        await RisingEdge(dut.axis_aclk)
+
+    await bypass_region(tb, base)
+
+    # for _ in range(100):
+    #     await RisingEdge(dut.axis_aclk)
+
+    # await bypass_region(tb, base)
+
+    # for _ in range(100):
+    #     await RisingEdge(dut.axis_aclk)
+
+    # await connect_region(tb, base)
+
+    for _ in range(100):
+        await RisingEdge(dut.axis_aclk)
+
+    await connect_region(tb, base)
+
+    await check_thr_coroutine
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)
@@ -292,8 +332,8 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 def cycle_pause():
     return itertools.cycle([1, 1, 1, 0])
 
-if cocotb.SIM_NAME:
 
+if cocotb.SIM_NAME:
     factory = TestFactory(run_test)
     factory.add_option("idle_inserter", [None, cycle_pause])
     factory.add_option("backpressure_inserter", [None, cycle_pause])
