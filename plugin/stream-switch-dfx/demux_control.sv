@@ -7,17 +7,16 @@ module demux_control # (
   parameter CL_M_COUNT = $clog2(M_COUNT)
 ) (
   input  wire        s_axil_awvalid,
-  input  wire [31:0] s_axil_awaddr,
+  input  wire [7:0] s_axil_awaddr,
   output wire        s_axil_awready,
   input  wire        s_axil_wvalid,
   input  wire [31:0] s_axil_wdata,
-  input  wire  [3:0] s_axil_wstrb, // Dummy, only used for sim.
   output wire        s_axil_wready,
   output wire        s_axil_bvalid,
   output wire  [1:0] s_axil_bresp,
   input  wire        s_axil_bready,
   input  wire        s_axil_arvalid,
-  input  wire [31:0] s_axil_araddr,
+  input  wire [7:0] s_axil_araddr,
   output wire        s_axil_arready,
   output wire        s_axil_rvalid,
   output wire [31:0] s_axil_rdata,
@@ -33,10 +32,10 @@ module demux_control # (
   reg commit_reg;
   reg [CL_M_COUNT-1:0] select_reg;
 
-  localparam REG_COMMIT = 12'h000;
-  localparam REG_SELECT = 12'h004;
+  localparam REG_COMMIT = 8'h00;
+  localparam REG_SELECT = 8'h04;
 
-  localparam C_ADDR_W = 12;
+  localparam C_ADDR_W = 8;
   wire                reg_en;
   wire                reg_we;
   wire [C_ADDR_W-1:0] reg_addr;
@@ -82,6 +81,10 @@ module demux_control # (
     if(commit_reg) begin
       commit_reg <= 1'b0;
       select_committed <= select_reg;
+    end
+
+    if(~axil_aresetn) begin
+      select_committed <= 1'b0;
     end
   end
 
