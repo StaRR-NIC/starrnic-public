@@ -76,27 +76,22 @@ module demux_control # (
     .reg_rstn       (axil_aresetn)
   );
 
-  // Committing logic
-  always @(posedge axil_aclk) begin
-    if(commit_reg) begin
-      commit_reg <= 1'b0;
-      select_committed <= select_reg;
-    end
-
-    if(~axil_aresetn) begin
-      select_committed <= 1'b0;
-    end
-  end
-
-  // Register read/write
   always @(posedge axil_aclk) begin
     if(~axil_aresetn) begin
       // set default values
       select_reg <= {CL_M_COUNT{1'b0}};
       commit_reg <= 1'b0;
+      select_committed <= 1'b0;
+    end
+
+    else if (commit_reg) begin
+      // else if => no commit during reset
+      commit_reg <= 1'b0;
+      select_committed <= select_reg;
     end
 
     else if (reg_en && reg_we) begin
+      // else if => no reg write during commit or reset
       // write to registers using reg_din
       case (reg_addr)
         REG_COMMIT: begin
@@ -108,7 +103,8 @@ module demux_control # (
       endcase
     end
 
-    else if (reg_en && ~reg_we) begin
+    if (reg_en && ~reg_we) begin
+      // reg reads can occur always (independent of commit/reset/write)
       // read into reg_dout
       case (reg_addr)
         REG_COMMIT: begin
