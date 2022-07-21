@@ -4,7 +4,7 @@
 
 module demux_control # (
   parameter M_COUNT = 2,
-  parameter SELECT_SIZE = $clog2(M_COUNT)
+  parameter CL_M_COUNT = $clog2(M_COUNT)
 ) (
   input         s_axil_awvalid,
   input  [31:0] s_axil_awaddr,
@@ -27,14 +27,14 @@ module demux_control # (
   input         axil_aclk,
   input         axil_aresetn,
 
-  output reg [SELECT_SIZE-1:0] select_committed
+  output reg [CL_M_COUNT-1:0] select_committed
 );
 
   reg commit_reg;
-  reg [SELECT_SIZE-1:0] select_reg;
+  reg [CL_M_COUNT-1:0] select_reg;
 
-  localparam REG_SELECT = 12'h000;
-  localparam REG_COMMIT = 12'h004;
+  localparam REG_COMMIT = 12'h000;
+  localparam REG_SELECT = 12'h004;
 
   localparam C_ADDR_W = 12;
   wire                reg_en;
@@ -89,18 +89,18 @@ module demux_control # (
   always @(posedge axil_aclk) begin
     if(~axil_aresetn) begin
       // set default values
-      select_reg <= {SELECT_SIZE{1'b0}};
+      select_reg <= {CL_M_COUNT{1'b0}};
       commit_reg <= 1'b0;
     end
 
     else if (reg_en && reg_we) begin
       // write to registers using reg_din
       case (reg_addr)
-        REG_SELECT: begin
-          select_reg <= reg_din[SELECT_SIZE-1:0];
-        end
         REG_COMMIT: begin
           commit_reg <= reg_din[0];
+        end
+        REG_SELECT: begin
+          select_reg <= reg_din[CL_M_COUNT-1:0];
         end
       endcase
     end
@@ -108,12 +108,13 @@ module demux_control # (
     else if (reg_en && ~reg_we) begin
       // read into reg_dout
       case (reg_addr)
-        REG_SELECT: begin
-          reg_dout[SELECT_SIZE-1:0] <= select_reg;
-        end
         REG_COMMIT: begin
           reg_dout[0] <= commit_reg;
-        end      endcase
+        end
+        REG_SELECT: begin
+          reg_dout[CL_M_COUNT-1:0] <= select_reg;
+        end
+      endcase
     end
   end
 

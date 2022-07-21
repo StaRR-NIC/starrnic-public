@@ -194,32 +194,53 @@ async def check_drop(tb, source, sink, drop_pkt):
     assert sink.empty()
 
 
-async def read_switch_config(tb, base):
-    tb.log.info("Sending control read command")
-    control_reg = await tb.control.read(0x0000 + base, 4)
-    mi_mux1 = await tb.control.read(0x0040 + base, 4)
-    mi_mux2 = await tb.control.read(0x0044 + base, 4)
-    tb.log.info(
-        "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
-        .format(control_reg.data, mi_mux1.data, mi_mux2.data))
+USE_DEMUX = True
+if(USE_DEMUX):
+    async def read_switch_config(tb, base):
+        tb.log.info("Sending control read command")
+        commit_reg = await tb.control.read(0x0000 + base, 4)
+        select_reg = await tb.control.read(0x0004 + base, 4)
+        tb.log.info(
+            "Read demux regs: Commit {}, Select {}"
+            .format(commit_reg.data, select_reg.data))
 
+    async def connect_region(tb, base):
+        tb.log.info("Configuring master2")
+        await tb.control.write(0x0004 + base, b'\x01')              # enable master 2
+        await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
+        await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
 
-async def connect_region(tb, base):
-    tb.log.info("Configuring master2")
-    await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80')  # disable master1
-    await tb.control.write(0x0044 + base, b'\x00')              # enable master 2
-    await tb.control.write(0x0000 + base, b'\x02')              # commit configuration
-    await tb.control.read(0x0040 + base, 4)                     # check configuration (m1)
-    await tb.control.read(0x0044 + base, 4)                     # check configuration (m2)
+    async def bypass_region(tb, base):
+        tb.log.info("Configuring master1")
+        await tb.control.write(0x0004 + base, b'\x00')              # enable master 1
+        await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
+        await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
 
+else:
+    async def read_switch_config(tb, base):
+        tb.log.info("Sending control read command")
+        control_reg = await tb.control.read(0x0000 + base, 4)
+        mi_mux1 = await tb.control.read(0x0040 + base, 4)
+        mi_mux2 = await tb.control.read(0x0044 + base, 4)
+        tb.log.info(
+            "Read splitter regs: Control {}, MI_MUX1 {}, MI_MUX2 {}"
+            .format(control_reg.data, mi_mux1.data, mi_mux2.data))
 
-async def bypass_region(tb, base):
-    tb.log.info("Configuring master1")
-    await tb.control.write(0x0040 + base, b'\x00')              # enable master1
-    await tb.control.write(0x0044 + base, b'\x00\x00\x00\x80')  # disable master2
-    await tb.control.write(0x0000 + base, b'\x02')              # commit configuration
-    await tb.control.read(0x0040 + base, 4)                     # check configuration (m1)
-    await tb.control.read(0x0044 + base, 4)                     # check configuration (m2)
+    async def connect_region(tb, base):
+        tb.log.info("Configuring master2")
+        await tb.control.write(0x0040 + base, b'\x00\x00\x00\x80')  # disable master1
+        await tb.control.write(0x0044 + base, b'\x00')              # enable master 2
+        await tb.control.write(0x0000 + base, b'\x02')              # commit configuration
+        await tb.control.read(0x0040 + base, 4)                     # check configuration (m1)
+        await tb.control.read(0x0044 + base, 4)                     # check configuration (m2)
+
+    async def bypass_region(tb, base):
+        tb.log.info("Configuring master1")
+        await tb.control.write(0x0040 + base, b'\x00')              # enable master1
+        await tb.control.write(0x0044 + base, b'\x00\x00\x00\x80')  # disable master2
+        await tb.control.write(0x0000 + base, b'\x02')              # commit configuration
+        await tb.control.read(0x0040 + base, 4)                     # check configuration (m1)
+        await tb.control.read(0x0044 + base, 4)                     # check configuration (m2)
 
 
 async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
