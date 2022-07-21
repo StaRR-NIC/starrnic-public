@@ -108,43 +108,101 @@ assign axis_combiner_tkeep[64+:64]   = axis_dp2c_tkeep;
 assign axis_combiner_tlast[1+:1]     = axis_dp2c_tlast;
 assign axis_combiner_tuser[48+:48]   = axis_dp2c_tuser;
 
-axis_switch_splitter_axilite splitter_inst (
-  .aclk               (axis_aclk),
-  .s_axi_ctrl_aclk    (axil_aclk),
+// axis_switch_splitter_axilite splitter_inst (
+//   .aclk               (axis_aclk),
+//   .s_axi_ctrl_aclk    (axil_aclk),
 
-  .aresetn            (axis_aresetn),
-  .s_axi_ctrl_aresetn (axil_aresetn),
+//   .aresetn            (axis_aresetn),
+//   .s_axi_ctrl_aresetn (axil_aresetn),
 
-  .s_axi_ctrl_awvalid (axil_splitter_awvalid),
-  .s_axi_ctrl_awaddr  (axil_splitter_awaddr[0+:7]),
-  .s_axi_ctrl_wvalid  (axil_splitter_wvalid),
-  .s_axi_ctrl_wdata   (axil_splitter_wdata[0+:32]),
-  .s_axi_ctrl_bready  (axil_splitter_bready),
-  .s_axi_ctrl_arvalid (axil_splitter_arvalid),
-  .s_axi_ctrl_araddr  (axil_splitter_araddr[0+:7]),
-  .s_axi_ctrl_rready  (axil_splitter_rready),
-  .s_axi_ctrl_awready (axil_splitter_awready),
-  .s_axi_ctrl_wready  (axil_splitter_wready),
-  .s_axi_ctrl_bvalid  (axil_splitter_bvalid),
-  .s_axi_ctrl_bresp   (axil_splitter_bresp[0+:2]),
-  .s_axi_ctrl_arready (axil_splitter_arready),
-  .s_axi_ctrl_rvalid  (axil_splitter_rvalid),
-  .s_axi_ctrl_rdata   (axil_splitter_rdata[0+:32]),
-  .s_axi_ctrl_rresp   (axil_splitter_rresp[0+:2]),
+//   .s_axi_ctrl_awvalid (axil_splitter_awvalid),
+//   .s_axi_ctrl_awaddr  (axil_splitter_awaddr[0+:7]),
+//   .s_axi_ctrl_wvalid  (axil_splitter_wvalid),
+//   .s_axi_ctrl_wdata   (axil_splitter_wdata[0+:32]),
+//   .s_axi_ctrl_bready  (axil_splitter_bready),
+//   .s_axi_ctrl_arvalid (axil_splitter_arvalid),
+//   .s_axi_ctrl_araddr  (axil_splitter_araddr[0+:7]),
+//   .s_axi_ctrl_rready  (axil_splitter_rready),
+//   .s_axi_ctrl_awready (axil_splitter_awready),
+//   .s_axi_ctrl_wready  (axil_splitter_wready),
+//   .s_axi_ctrl_bvalid  (axil_splitter_bvalid),
+//   .s_axi_ctrl_bresp   (axil_splitter_bresp[0+:2]),
+//   .s_axi_ctrl_arready (axil_splitter_arready),
+//   .s_axi_ctrl_rvalid  (axil_splitter_rvalid),
+//   .s_axi_ctrl_rdata   (axil_splitter_rdata[0+:32]),
+//   .s_axi_ctrl_rresp   (axil_splitter_rresp[0+:2]),
 
-  .s_axis_tready      (axis_qdma_h2c_p0_tready),
-  .s_axis_tvalid      (axis_qdma_h2c_p0_tvalid),
-  .s_axis_tdata       (axis_qdma_h2c_p0_tdata),
-  .s_axis_tkeep       (axis_qdma_h2c_p0_tkeep),
-  .s_axis_tlast       (axis_qdma_h2c_p0_tlast),
-  .s_axis_tuser       (axis_qdma_h2c_p0_tuser),
+//   .s_axis_tready      (axis_qdma_h2c_p0_tready),
+//   .s_axis_tvalid      (axis_qdma_h2c_p0_tvalid),
+//   .s_axis_tdata       (axis_qdma_h2c_p0_tdata),
+//   .s_axis_tkeep       (axis_qdma_h2c_p0_tkeep),
+//   .s_axis_tlast       (axis_qdma_h2c_p0_tlast),
+//   .s_axis_tuser       (axis_qdma_h2c_p0_tuser),
 
-  .m_axis_tready      (axis_splitter_tready),
-  .m_axis_tvalid      (axis_splitter_tvalid),
-  .m_axis_tdata       (axis_splitter_tdata),
-  .m_axis_tkeep       (axis_splitter_tkeep),
-  .m_axis_tlast       (axis_splitter_tlast),
-  .m_axis_tuser       (axis_splitter_tuser)
+//   .m_axis_tready      (axis_splitter_tready),
+//   .m_axis_tvalid      (axis_splitter_tvalid),
+//   .m_axis_tdata       (axis_splitter_tdata),
+//   .m_axis_tkeep       (axis_splitter_tkeep),
+//   .m_axis_tlast       (axis_splitter_tlast),
+//   .m_axis_tuser       (axis_splitter_tuser)
+// );
+
+wire [$clog2(SPLIT_COMBINE_PORT_COUNT)-1:0] select;
+
+demux_control #(
+  .M_COUNT (SPLIT_COMBINE_PORT_COUNT)
+) demux_control_inst (
+  .s_axil_awvalid (axil_splitter_awvalid),
+  .s_axil_awaddr  (axil_splitter_awaddr),
+  .s_axil_awready (axil_splitter_awready),
+  .s_axil_wvalid  (axil_splitter_wvalid),
+  .s_axil_wdata   (axil_splitter_wdata),
+  .s_axil_wstrb   (4'b1111), // Dummy, only used for sim.
+  .s_axil_wready  (axil_splitter_wready),
+  .s_axil_bvalid  (axil_splitter_bvalid),
+  .s_axil_bresp   (axil_splitter_bresp),
+  .s_axil_bready  (axil_splitter_bready),
+  .s_axil_arvalid (axil_splitter_arvalid),
+  .s_axil_araddr  (axil_splitter_araddr),
+  .s_axil_arready (axil_splitter_arready),
+  .s_axil_rvalid  (axil_splitter_rvalid),
+  .s_axil_rdata   (axil_splitter_rdata),
+  .s_axil_rresp   (axil_splitter_rresp),
+  .s_axil_rready  (axil_splitter_rready),
+
+  .axil_aclk      (axil_aclk),
+  .axil_aresetn   (axil_aresetn),
+
+  .select_committed(select)
+);
+
+axis_demux #(
+    .M_COUNT (SPLIT_COMBINE_PORT_COUNT),
+    .DATA_WIDTH (512),
+    .DEST_ENABLE (1),
+    .USER_ENABLE (1),
+    .USER_WIDTH (48),
+) splitter_inst (
+  .clk           (axis_aclk),
+  .rst           (~axis_aresetn),
+
+  .s_axis_tdata  (axis_qdma_h2c_p0_tdata),
+  .s_axis_tkeep  (axis_qdma_h2c_p0_tkeep),
+  .s_axis_tvalid (axis_qdma_h2c_p0_tvalid),
+  .s_axis_tready (axis_qdma_h2c_p0_tready),
+  .s_axis_tlast  (axis_qdma_h2c_p0_tlast),
+  .s_axis_tuser  (axis_qdma_h2c_p0_tuser),
+
+  .m_axis_tdata  (axis_splitter_tdata),
+  .m_axis_tkeep  (axis_splitter_tkeep),
+  .m_axis_tvalid (axis_splitter_tvalid),
+  .m_axis_tready (axis_splitter_tready),
+  .m_axis_tlast  (axis_splitter_tlast),
+  .m_axis_tuser  (axis_splitter_tuser),
+
+  .enable        (1'b1),
+  .drop          (1'b0),
+  .select        (select)
 );
 
 axi_stream_pipeline tx_ppl_inst (
