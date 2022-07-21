@@ -110,8 +110,8 @@ class TB:
         await RisingEdge(self.dut.axil_aclk)
         self.dut.mod_rstn.value = 1
         await RisingEdge(self.dut.mod_rst_done)
-        # await RisingEdge(self.dut.axil_aclk)
-        # await RisingEdge(self.dut.axil_aclk)
+        await RisingEdge(self.dut.axil_aclk)
+        await RisingEdge(self.dut.axil_aclk)
 
 
 async def check_thr(tb, source, sink, test_packet1, test_packet2):

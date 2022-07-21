@@ -113,9 +113,11 @@ module demux_control # (
       case (reg_addr)
         REG_COMMIT: begin
           reg_dout[0] <= commit_reg;
+          reg_dout[31:1] <= 31'b0;
         end
         REG_SELECT: begin
           reg_dout[CL_M_COUNT-1:0] <= select_reg;
+          reg_dout[31:CL_M_COUNT] <= {(31-CL_M_COUNT+1){1'b0}};
         end
       endcase
     end
