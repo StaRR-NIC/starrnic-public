@@ -22,6 +22,7 @@
 read_verilog -quiet verilog_axis/priority_encoder.v
 read_verilog -quiet verilog_axis/arbiter.v
 read_verilog -quiet verilog_axis/axis_arb_mux.v
+read_verilog -quiet verilog_axis/axis_demux.v
 
 source stream_switch_axi_crossbar.tcl
 read_verilog -quiet stream_switch_address_map_inst.vh
@@ -29,8 +30,9 @@ read_verilog -quiet starrnic_bypass.vh
 read_verilog -quiet stream_switch_address_map.v
 
 # source stream_switch_axis_switch_combiner_axilite.tcl
-source axis_switch_combiner_tdest.tcl
-source axis_switch_splitter_axilite.tcl
+# source axis_switch_combiner_tdest.tcl
+# source axis_switch_splitter_axilite.tcl
+read_verilog -quiet -sv demux_control.sv
 source ila_0_p4.tcl
 
 source p4/vitis_net_p4_0_register.tcl
