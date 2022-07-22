@@ -113,6 +113,25 @@ class TB:
         await RisingEdge(self.dut.axil_aclk)
         await RisingEdge(self.dut.axil_aclk)
 
+    async def reset_region(self):
+        rst = self.dut.stream_switch_dfx_inst.dummy_rstn
+        rst.setimmediatevalue(0)
+        await RisingEdge(self.dut.axil_aclk)
+        await RisingEdge(self.dut.axil_aclk)
+        rst.setimmediatevalue(1)
+        await RisingEdge(self.dut.axil_aclk)
+        await RisingEdge(self.dut.axil_aclk)
+
+        # region = self.dut.stream_switch_dfx_inst.partition1_rm_intf_inst
+        # region.axil_aresetn.setimmediatevalue(0)
+        # region.axis_aresetn.setimmediatevalue(0)
+        # await RisingEdge(self.dut.axil_aclk)
+        # await RisingEdge(self.dut.axil_aclk)
+        # region.axil_aresetn.setimmediatevalue(1)
+        # region.axis_aresetn.setimmediatevalue(1)
+        # await RisingEdge(self.dut.axil_aclk)
+        # await RisingEdge(self.dut.axil_aclk)
+
 
 async def check_thr(tb, source, sink, test_packet1, test_packet2):
     # Pkts on source should arrive at sink
@@ -127,12 +146,16 @@ async def check_thr(tb, source, sink, test_packet1, test_packet2):
     # tb.log.info("Frames sent")
 
     tb.log.info("Trying to recv frames")
+    n_frames = len(test_frames)
+    recd_frames = 0
     for test_frame in test_frames:
+        tb.log.info("Recd {} of {} frames.".format(recd_frames, n_frames))
         rx_frame = await sink.recv()
         if(len(rx_frame.tdata) != len(test_frame.tdata)):
             tb.log.error("Mismatch in frames")
             await Timer(get_sim_steps(10, units="us"))
             assert False
+        recd_frames += 1
 
     assert sink.empty()
 
@@ -324,22 +347,24 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     check_thr_coroutine = cocotb.fork(check_thr(
         tb, tb.source_rx[1], tb.p4_ppl_sink, thr_pkt1, thr_pkt2))
 
-    for _ in range(100):
-        await RisingEdge(dut.axis_aclk)
+    # for _ in range(99):
+    #     await RisingEdge(dut.axis_aclk)
+    await Timer(533, units="ns")
 
     await bypass_region(tb, base)
 
-    # for _ in range(100):
-    #     await RisingEdge(dut.axis_aclk)
+    for _ in range(99):
+        await RisingEdge(dut.axis_aclk)
 
     # await bypass_region(tb, base)
+    await tb.reset_region()
 
-    # for _ in range(100):
-    #     await RisingEdge(dut.axis_aclk)
+    for _ in range(99):
+        await RisingEdge(dut.axis_aclk)
 
-    # await connect_region(tb, base)
+    await connect_region(tb, base)
 
-    for _ in range(100):
+    for _ in range(99):
         await RisingEdge(dut.axis_aclk)
 
     await connect_region(tb, base)

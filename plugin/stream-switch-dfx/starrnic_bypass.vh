@@ -224,12 +224,17 @@ axi_stream_pipeline tx_ppl_inst (
   .aresetn       (axil_aresetn)
 );
 
+// For use in simulation only.
+// Emulate PR by asserting dummy_rst and only causing the PR module to be reset.
+reg dummy_rstn;
+initial dummy_rstn = 1'b1;
+
 partition1_rm_intf partition1_rm_intf_inst (
   .axil_aclk      (axil_aclk),
-  .axil_aresetn   (axil_aresetn),
+  .axil_aresetn   (axil_aresetn & dummy_rstn),
 
   .axis_aclk      (axis_aclk),
-  .axis_aresetn   (axis_aresetn),
+  .axis_aresetn   (axis_aresetn & dummy_rstn),
 
   .s_axil_awvalid (axil_dp_awvalid),
   .s_axil_awaddr  (axil_dp_awaddr),
