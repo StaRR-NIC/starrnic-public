@@ -20,20 +20,6 @@ partial_bitstream=$1
 board=$2
 probes_path="${3:-}"
 
-bypass_region () {
-    echo "Bypassing counter"
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 w 0x00 | tail -n 1
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 w 0x80000000 | tail -n 1
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x02 | tail -n 1
-}
-
-connect_region () {
-    echo "Connecting counter"
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 w 0x80000000 | tail -n 1
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 w 0x00 | tail -n 1
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x02 | tail -n 1
-}
-
 read_counter_value () {
     echo "Counter value"
     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x140000 | tail -n 1
@@ -45,12 +31,41 @@ check_read_temperature () {
     # TODO: check and assert if above output seems fine
 }
 
+# check_region () {
+#     echo "Current regions (0x80000000 means not in use)"
+#     echo "Counter"
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 | tail -n 1
+#     echo "Bypass"
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 | tail -n 1
+# }
+
+# bypass_region () {
+#     echo "Bypassing counter"
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 w 0x00 | tail -n 1
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 w 0x80000000 | tail -n 1
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x02 | tail -n 1
+# }
+
+# connect_region () {
+#     echo "Connecting counter"
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 w 0x80000000 | tail -n 1
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 w 0x00 | tail -n 1
+#     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x02 | tail -n 1
+# }
+
 check_region () {
-    echo "Current regions (0x80000000 means not in use)"
-    echo "Counter"
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100044 | tail -n 1
-    echo "Bypass"
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100040 | tail -n 1
+    echo "0 means bypass, 1 means connected"
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 | tail -n 1
+}
+
+bypass_region () {
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100004 w 0x0 | tail -n 1
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1 | tail -n 1
+}
+
+connect_region () {
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100004 w 0x1 | tail -n 1
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1 | tail -n 1
 }
 
 check_read_temperature
