@@ -17,11 +17,19 @@ board=$2
 probes_path="${3:-}"
 
 # Works for au280 and u50
-sudo ifconfig enp134s0f0 down
-if [[ -n "${EXTENDED_DEVICE_BDF2:-}" ]]; then
-    sudo ifconfig enp134s0f1 down
+if [[ -f /sys/class/net/$STARRNIC_IFACE1 ]]; then
+    sudo ifconfig $STARRNIC_IFACE1 down
+    if [[ -n "${EXTENDED_DEVICE_BDF2:-}" ]]; then
+        sudo ifconfig $STARRNIC_IFACE2 down
+    fi
 fi
-sudo rmmod onic.ko
+
+onic_found=$((lsmod | grep onic) || echo "not found")
+if [[ ${onic_found} == "not found" ]]; then
+    echo "onic module not loaded"
+else
+    sudo rmmod onic.ko
+fi
 
 # Infer bridge
 if [ -e "/sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1" ]; then
