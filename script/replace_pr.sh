@@ -55,7 +55,7 @@ check_read_temperature () {
 
 check_region () {
     echo "0 means bypass, 1 means connected"
-    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 | tail -n 1
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100004 | tail -n 1
 }
 
 bypass_region () {
@@ -68,6 +68,7 @@ connect_region () {
     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1 | tail -n 1
 }
 
+echo "--------------------------------------------------------------------------------"
 check_read_temperature
 check_region
 echo ""
@@ -79,6 +80,7 @@ echo ""
 # echo ""
 
 # Bypass the region
+echo "Bypassing"
 bypass_region
 read_counter_value # (should be arbit value)
 check_region
@@ -86,13 +88,17 @@ echo ""
 
 # Reconfigure
 echo "Reconfiguring using $partial_bitstream..."
+echo ""
 vivado -mode tcl -source $STARRNIC_SHELL/script/program_fpga.tcl \
     -tclargs -board $board \
     -bitstream_path $partial_bitstream \
     -probes_path $probes_path
+echo ""
 
 # move packets back to region
+echo "Connecting back"
 connect_region
 read_counter_value
 check_region
 echo ""
+echo "--------------------------------------------------------------------------------"

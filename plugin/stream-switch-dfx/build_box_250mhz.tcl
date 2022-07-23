@@ -33,7 +33,7 @@ read_verilog -quiet stream_switch_address_map.v
 # source axis_switch_combiner_tdest.tcl
 # source axis_switch_splitter_axilite.tcl
 read_verilog -quiet -sv demux_control.sv
-source ila_0_p4.tcl
+# source ila_0_p4.tcl
 
 source p4/vitis_net_p4_0_register.tcl
 read_verilog -quiet -sv p4_hdr_register.sv
