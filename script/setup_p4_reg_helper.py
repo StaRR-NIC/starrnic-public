@@ -1,8 +1,12 @@
+import sys
 import ipaddress
+from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
+
 
 def mac2bytes(mac: str):
     assert len(mac) == 17
     return int("0x{}".format(mac.replace(":", "")), 16).to_bytes(6, 'big').hex()
+
 
 def ip2bytes(ip: str):
     return int(ipaddress.IPv4Address(ip)).to_bytes(4, 'big').hex()
@@ -11,16 +15,16 @@ def ip2bytes(ip: str):
 cmd = "sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2"
 base = 0x103000
 
-experiment = "throughput"
+experiment = "latency"
 
 # ------------------------------------------
 # References
 # n3 port rx (1)
-n3_port1 = '00:0a:35:86:00:01'  # "00:0a:35:ec:b9:9e"
+n3_port1 = '00:0a:35:86:00:01'
 srcip = '10.0.0.57'
 
 # n3 port tx (0)
-n3_port0 = '00:0a:35:86:00:00'  # "00:0a:35:23:1d:87"
+n3_port0 = '00:0a:35:86:00:00'
 srcip = '10.0.0.55'
 
 # n5 port 0
@@ -43,7 +47,6 @@ dstip = '10.0.0.45'
 
 sport = 64000
 dport = 64001
-ipchksum = 0x662e
 
 # ------------------------------------------
 # Latency Experiment
@@ -60,6 +63,16 @@ if(experiment == "latency"):
     dport = 60512
     ipchksum = 0x662a
 
+
+dut_rx = (Ether(src='00:0a:35:02:9d:2f', dst='00:0a:35:bd:11:be') / IP(id=0, src='10.0.0.47', dst='10.0.0.57') / UDP(sport=60512, dport=62177) / (b'\xa0'*64))
+dut_tx = (Ether(src=srcmac, dst=dstmac) / IP(id=0, src=srcip, dst=dstip) / UDP(sport=sport, dport=dport) / (b'\xa0'*64))
+
+# Fill derived header fields (len, checksum, etc.)
+dut_rx = Ether(raw(dut_rx))
+dut_tx = Ether(raw(dut_tx))
+
+ipchksum = dut_tx[IP].chksum
+
 print("{} 0x{:X} w 0x{}".format(cmd, 0x000 + base, mac2bytes(srcmac)[-8:]))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x004 + base, mac2bytes(srcmac)[:4]))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x008 + base, mac2bytes(dstmac)[-8:]))
@@ -70,8 +83,5 @@ print("{} 0x{:X} w 0x{}".format(cmd, 0x018 + base, sport.to_bytes(2, 'big').hex(
 print("{} 0x{:X} w 0x{}".format(cmd, 0x01C + base, dport.to_bytes(2, 'big').hex()))
 print("{} 0x{:X} w 0x{}".format(cmd, 0x020 + base, ipchksum.to_bytes(2, 'big').hex()))
 
-from scapy.all import Ether, IP, UDP, wrpcap, raw, TCP
-print("DUT RX")
-(Ether(src='00:0a:35:02:9d:2f', dst='00:0a:35:bd:11:be') / IP(id=0, src='10.0.0.47', dst='10.0.0.57') / UDP(sport=60512, dport=62177) / (b'\xa0'*64)).show2()
-print("DUT TX")
-(Ether(src=srcmac, dst=dstmac) / IP(id=0, src=srcip, dst=dstip) / UDP(sport=sport, dport=dport) / (b'\xa0'*64)).show2()
+print(("\nDUT RX\n" + dut_rx.show(dump=True)), file=sys.stderr)
+print(("DUT TX\n" + dut_tx.show(dump=True)), file=sys.stderr)
