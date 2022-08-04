@@ -23,6 +23,7 @@ packets = [
 
 thr_pkt1 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xee'*128)
 thr_pkt2 = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xff'*128)
+trash_pkt = Ether(src='ff:0a:35:bc:7a:bc', dst='00:0a:35:bc:7a:bc') / IP(src='10.0.0.40', dst='10.0.0.53') / UDP(sport=111, dport=62177) / (b'\xdd'*128)
 
 # src mac, dst mac, src ip, dst ip, src port, dst port, ipsum
 expectations = [
@@ -133,7 +134,8 @@ class TB:
         # await RisingEdge(self.dut.axil_aclk)
 
 
-async def check_thr(tb, source, sink, test_packet1, test_packet2):
+async def check_thr(tb: TB, source: AxiStreamSource, sink: AxiStreamSink,
+                    test_packet1, test_packet2):
     # Pkts on source should arrive at sink
     test_frames = []
     test_frame1 = AxiStreamFrame(bytes(test_packet1), tuser=0)
@@ -153,6 +155,7 @@ async def check_thr(tb, source, sink, test_packet1, test_packet2):
         rx_frame = await sink.recv()
         if(len(rx_frame.tdata) != len(test_frame.tdata)):
             tb.log.error("Mismatch in frames")
+            tb.log.error("Expected: {}, Got: {}.".format(len(test_frame.tdata), len(rx_frame.tdata)))
             await Timer(get_sim_steps(10, units="us"))
             assert False
         recd_frames += 1
@@ -160,7 +163,8 @@ async def check_thr(tb, source, sink, test_packet1, test_packet2):
     assert sink.empty()
 
 
-async def check_connection(tb: TB, source, sink, test_packet=packets[0]):
+async def check_connection(tb: TB, source: AxiStreamSource,
+                           sink: AxiStreamSink, test_packet=packets[0]):
     # Pkts on source should arrive at sink
     test_frames = []
     test_frame = AxiStreamFrame(bytes(test_packet), tuser=0)
@@ -174,6 +178,19 @@ async def check_connection(tb: TB, source, sink, test_packet=packets[0]):
         assert len(rx_frame.tdata) == len(test_frame.tdata)
         tb.log.info("Len check done for sink: {}".format(sink))
 
+    assert sink.empty()
+
+
+async def send_trash_packet(tb: TB, source: AxiStreamSource, test_packet):
+    test_frame = AxiStreamFrame(bytes(test_packet), tuser=0)
+    await source.send(test_frame)
+
+
+async def recv_trash_packet(tb: TB, sink: AxiStreamSink, test_packet):
+    test_frame = AxiStreamFrame(bytes(test_packet), tuser=0)
+    tb.log.info("Waiting for trash packet")
+    rx_frame = await sink.recv()
+    assert len(rx_frame.tdata) == len(test_frame.tdata)
     assert sink.empty()
 
 
@@ -228,13 +245,13 @@ if(USE_DEMUX):
             .format(commit_reg.data, select_reg.data))
 
     async def connect_region(tb, base):
-        tb.log.info("Configuring master2")
+        tb.log.info("Connecting region (Configuring master2)")
         await tb.control.write(0x0004 + base, b'\x01')              # enable master 2
         await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
         await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
 
     async def bypass_region(tb, base):
-        tb.log.info("Configuring master1")
+        tb.log.info("Bypassing region (Configuring master1)")
         await tb.control.write(0x0004 + base, b'\x00')              # enable master 1
         await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
         await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
@@ -358,6 +375,12 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     # await bypass_region(tb, base)
     await tb.reset_region()
+    # dp_in = AxiStreamSource(
+    #     AxiStreamBus.from_prefix(dut.stream_switch_dfx_inst, "axis_dp2c"),
+    #     dut.axis_aclk, dut.stream_switch_dfx_inst.axis_aresetn,
+    #     reset_active_level=False)
+    # await send_trash_packet(tb, dp_in, trash_pkt)
+    # del dp_in
 
     for _ in range(99):
         await RisingEdge(dut.axis_aclk)
@@ -370,6 +393,8 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     await connect_region(tb, base)
 
     await check_thr_coroutine
+
+    # await recv_trash_packet(tb, tb.p4_ppl_sink, trash_pkt)
 
     await RisingEdge(dut.axis_aclk)
     await RisingEdge(dut.axis_aclk)
