@@ -248,13 +248,26 @@ if(USE_DEMUX):
         tb.log.info("Connecting region (Configuring master2)")
         await tb.control.write(0x0004 + base, b'\x01')              # enable master 2
         await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
-        await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
+        await tb.control.read(0x0004 + base, 4)                     # check configuration
 
     async def bypass_region(tb, base):
         tb.log.info("Bypassing region (Configuring master1)")
         await tb.control.write(0x0004 + base, b'\x00')              # enable master 1
         await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
-        await tb.control.read(0x0004 + base, 4)                     # check configuration (m1)
+        await tb.control.read(0x0004 + base, 4)                     # check configuration
+
+    async def disable_region(tb, base):
+        tb.log.info("Disabling RM")
+        await tb.control.write(0x0008 + base, b'\x01')              # disable RM
+        await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
+        await tb.control.read(0x0008 + base, 4)                     # check configuration
+
+    async def enable_region(tb, base):
+        tb.log.info("Enabling RM")
+        await tb.control.write(0x0008 + base, b'\x00')              # enable RM
+        await tb.control.write(0x0000 + base, b'\x01')              # commit configuration
+        await tb.control.read(0x0008 + base, 4)                     # check configuration
+
 
 else:
     async def read_switch_config(tb: TB, base):
@@ -370,10 +383,13 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
 
     await bypass_region(tb, base)
 
-    for _ in range(99):
+    await Timer(533, units="ns")
+
+    await disable_region(tb, base)
+
+    for _ in range(45):
         await RisingEdge(dut.axis_aclk)
 
-    # await bypass_region(tb, base)
     await tb.reset_region()
     # dp_in = AxiStreamSource(
     #     AxiStreamBus.from_prefix(dut.stream_switch_dfx_inst, "axis_dp2c"),
@@ -382,12 +398,11 @@ async def run_test(dut, idle_inserter=None, backpressure_inserter=None):
     # await send_trash_packet(tb, dp_in, trash_pkt)
     # del dp_in
 
-    for _ in range(99):
-        await RisingEdge(dut.axis_aclk)
+    await Timer(533, units="ns")
 
-    await connect_region(tb, base)
+    await enable_region(tb, base)
 
-    for _ in range(99):
+    for _ in range(45):
         await RisingEdge(dut.axis_aclk)
 
     await connect_region(tb, base)

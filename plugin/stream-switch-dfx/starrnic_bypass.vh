@@ -101,8 +101,9 @@ assign axis_combiner_tkeep[0+:64]    = axis_p2p2c_tkeep;
 assign axis_combiner_tlast[0+:1]     = axis_p2p2c_tlast;
 assign axis_combiner_tuser[0+:48]    = axis_p2p2c_tuser;
 
-assign axis_dp2c_tready              = axis_combiner_tready[1+:1];
-assign axis_combiner_tvalid[1+:1]    = axis_dp2c_tvalid;
+wire disable_rm;
+assign axis_dp2c_tready              = axis_combiner_tready[1+:1] & ~disable_rm;
+assign axis_combiner_tvalid[1+:1]    = axis_dp2c_tvalid & ~disable_rm;
 assign axis_combiner_tdata[512+:512] = axis_dp2c_tdata;
 assign axis_combiner_tkeep[64+:64]   = axis_dp2c_tkeep;
 assign axis_combiner_tlast[1+:1]     = axis_dp2c_tlast;
@@ -173,7 +174,8 @@ demux_control #(
   .axil_aclk      (axil_aclk),
   .axil_aresetn   (axil_aresetn),
 
-  .select_committed(select)
+  .select_committed(select),
+  .disable_rm_committed(disable_rm)
 );
 
 axis_demux #(

@@ -26,14 +26,17 @@ module demux_control # (
   input  wire        axil_aclk,
   input  wire        axil_aresetn,
 
-  output reg [CL_M_COUNT-1:0] select_committed
+  output reg [CL_M_COUNT-1:0] select_committed,
+  output reg disable_rm_committed
 );
 
   reg commit_reg;
   reg [CL_M_COUNT-1:0] select_reg;
+  reg disable_rm_reg;
 
   localparam REG_COMMIT = 8'h00;
   localparam REG_SELECT = 8'h04;
+  localparam REG_DISABLE_RM = 8'h08;
 
   localparam C_ADDR_W = 8;
   wire                reg_en;
@@ -79,15 +82,20 @@ module demux_control # (
   always @(posedge axil_aclk) begin
     if(~axil_aresetn) begin
       // set default values
-      select_reg <= {CL_M_COUNT{1'b0}};
       commit_reg <= 1'b0;
-      select_committed <= 1'b0;
+
+      select_reg <= {CL_M_COUNT{1'b0}};
+      disable_rm_reg <= 1'b0;
+
+      select_committed <= {CL_M_COUNT{1'b0}};
+      disable_rm_committed <= 1'b0;
     end
 
     else if (commit_reg) begin
       // else if => no commit during reset
       commit_reg <= 1'b0;
       select_committed <= select_reg;
+      disable_rm_committed <= disable_rm_reg;
     end
 
     else if (reg_en && reg_we) begin
@@ -99,6 +107,9 @@ module demux_control # (
         end
         REG_SELECT: begin
           select_reg <= reg_din[CL_M_COUNT-1:0];
+        end
+        REG_DISABLE_RM: begin
+          disable_rm_reg <= reg_din[0];
         end
       endcase
     end
@@ -114,6 +125,10 @@ module demux_control # (
         REG_SELECT: begin
           reg_dout[CL_M_COUNT-1:0] <= select_reg;
           reg_dout[31:CL_M_COUNT] <= {(31-CL_M_COUNT+1){1'b0}};
+        end
+        REG_DISABLE_RM: begin
+          reg_dout[0] <= disable_rm_reg;
+          reg_dout[31:1] <= 31'b0;
         end
       endcase
     end
