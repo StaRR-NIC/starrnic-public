@@ -56,6 +56,8 @@ check_read_temperature () {
 check_region () {
     echo "0 means bypass, 1 means connected"
     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100004 | tail -n 1
+    echo "0 means enabled, 1 means disabled"
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100008 | tail -n 1
 }
 
 bypass_region () {
@@ -65,6 +67,16 @@ bypass_region () {
 
 connect_region () {
     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100004 w 0x1 | tail -n 1
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1 | tail -n 1
+}
+
+disable_region () {
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100008 w 0x1 | tail -n 1
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1 | tail -n 1
+}
+
+enable_region () {
+    sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100008 w 0x0 | tail -n 1
     sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1 | tail -n 1
 }
 
@@ -82,6 +94,10 @@ echo ""
 # Bypass the region
 echo "Bypassing"
 bypass_region
+sleep 1
+# ^^ We let all packets queued up in the region to be flushed, before disabling
+# the region. 1 sec is worth million packets in networking parlance.
+disable_region
 read_counter_value # (should be arbit value)
 check_region
 echo ""
@@ -97,6 +113,7 @@ echo ""
 
 # move packets back to region
 echo "Connecting back"
+enable_region
 connect_region
 read_counter_value
 check_region
