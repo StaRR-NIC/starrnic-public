@@ -1,104 +1,113 @@
 # StaRR-NIC
 
-## TODO:
-1. Add docs about license server setup
-2. Add steps for PR project setup. Make a script for it.
-3. Make configure stream switch script do first time, and module specific setup.
-4. Add calculation of packet sizes for common packets.
+We explore FPGA partial reconfiguration primitives to build runtime reconfigurable FPGA NICs.  
+This code accompanies the technical report:
+
+<b>CMU technical report number: CMU-CS-23-100  
+Title: StaRRNIC: Enabling Runtime Reconfigurable FPGA NICs  
+Authors: Anup Agarwal (Carnegie Mellon University), Daehyeok Kim (University of Texas at Austin), Srinivasan Seshan (Carnegie Mellon University)</b>
+
+The technical report is to be released (expected March 2023).
+
+This is a work in progress. For any questions/concerns/feedback, please email anupa@andrew.cmu.edu.
+
+## Scope
+This code serves as a reference on how to perform a partial reconfiguration (PR) operation on an FPGA to go from one packet processing application to another, while the FPGA is serving packets at line rate all along. During the PR operation, packets are diverted away from the old application, then a new application is programmed and lastly, the traffic is divereted to the new application. For a brief period, the packets are not processed by any application. This shows the <i>loss of functionality</i> tradeoff.
+
+During the PR operation, one can also tradeoff <i>performance</i> (e.g., by reconfiguring one replica of an application at a time), or tradeoff <i>resources</i> (e.g., by having both old and new applications running for a brief period of time).
+
+Depending on the application you put in the reconfigurable region of the FPGA, you may need to change the floorplan or use more aggresive placement/route options with compiler to meet timing. (https://www.xilinx.com/content/dam/xilinx/support/documents/sw_manuals/xilinx2022_2/ug909-vivado-partial-reconfiguration.pdf).
 
 ## Code Structure:
 
-```
-.
-├── build
-├── CHANGELOG.md
-├── constr
-├── plugin
-│   ├── byte-counter  # packet size counter
-│   ├── p2p
-│   └── stream-switch  # bypass-able packet size counter
-├── README.md
-├── script
-│   ├── board_settings
-│   ├── build.tcl
-│   ├── configure_stream_switch.sh
-│   ├── program_fpga.sh
-│   ├── program_fpga.tcl
-│   ├── setup_device.sh
-├── src
-├── tb
-│   ├── module-name  # directory for each module to be tested
-│   └── script
-...
-```
+- `plugin/stream-switch-dfx` has the main logic that allows zero downtime runtime reconfiguration.
+- `scripts/` has scripts we use to tell the xilinx toolchain to copmile the design for partial reconfiguration. It also has scripts for reconfiguring the FPGA design (loading partial bitstreams) at runtime.
+- `reference-scripts/` reference scripts for setting up toolchain and environment variables.
+
 ## Setup
+Note, some scripts we use may have hardcoded paths to installed tools/files.
+We provide the paths where we install such tools/files.
+
 - Hardware setup
-  - Physically install an FPGA supported by Open-NIC
-  - Install FPGA driver and update firmware (follow FPGA data sheet and user guide)
-    - Installed at `/opt` on neptune1, neptune3
-  - Obtain board files for your FPGA (from https://www.xilinx.com/member/alveo-vivado.html#u250)
-    - Installed at `/datadrive/board-files` on neptune*
-  - Clone and compile open-nic-driver (follow open-nic-driver README)
-  - Clone pcimem (follow pcimem README)
+  - Physically install an FPGA supported by Open-NIC (https://github.com/Xilinx/open-nic).
+  - Install FPGA driver and update firmware (follow your FPGA board's data sheet and user guide, e.g., we used (https://www.xilinx.com/products/boards-and-kits/alveo/u280.html#gettingStarted).
+    - We install these at `/opt`.
+  - Obtain board files for your FPGA (from https://www.xilinx.com/member/alveo-vivado.html#u280).
+    - We install these at `/datadrive/board-files`.
+  - Clone and compile open-nic-driver (follow open-nic-driver README, https://github.com/Xilinx/open-nic-driver).
+  - Clone pcimem (follow pcimem README https://github.com/billfarrow/pcimem).
 - Build setup
-  - Install Vitis/Vivado 2020.2 (for open-nic-shell), Vitis 2021.1 (for VitisP4Net).
-    - Installed at `/tools/Xilinx` on neptune1, neptune3
-- Simulation setup (Use Mentor modelsim with cocotb for Xilinx IPs and custom sources using Xilinx simulation library and custom flow with cocotb)
+  - Install Vivado 2021.1 (for open-nic-shell), Vitis 2021.1 (if also using VitisP4Net, i.e., Xilinx's P4 toolchain).
+    - We install them at `/tools/Xilinx`.
+    - Vivado requires a license (obtain from Xilinx).
+    - The P4 toolchain also requires a license (obtain from Xilinx).
+- Simulation setup (We use Mentor modelsim with cocotb for Xilinx IPs and custom sources using Xilinx simulation library and custom flow with cocotb)
   - Install modelsim.
-    - Fetched from CMU ECE AFS. Installed at `/opt` on neptune1
-  - Install cocotb and required sub-packages (cocotb-axi, cocotb-eth, etc.) (from https://github.com/corundum/corundum/wiki/Getting-Started)
+    - This requires a license. Our academic institution provided this. We installed it at `/opt`.
+  - Install cocotb and required sub-packages (cocotb-axi, cocotb-eth, etc.) (from https://github.com/corundum/corundum/wiki/Getting-Started).
     - `pip install cocotb cocotb-bus cocotb-test cocotbext-axi cocotbext-eth cocotbext-pcie pytest scapy`
     - `pip install tox pytest-xdist pytest-sugar`
-      - Installed in `wbase` conda environment on neptune1
-
+- At some places we refer to some environment variables (`exec reference-scripts/sample_env_setup.sh`), please find their reference values here:
+  ```
+  export PCIMEM_PATH="$HOME/opt/pcimem"
+  export PCIMEM="$PCIMEM_PATH/pcimem"
+  export STARRNIC_SHELL="$HOME/Projects/StaRR-NIC/starrnic-public"
+  export EXTENDED_DEVICE_BDF1="0000:86:00.0"
+  export EXTENDED_DEVICE_BDF2="0000:86:00.1"
+  export STARRNIC_IP1="10.0.0.55"
+  export STARRNIC_IP2="10.0.0.53"
+  export STARRNIC_IFACE1=enp134s0f0
+  export STARRNIC_IFACE2=enp134s0f1
+  ```
 
 ## Build
-- Ensure modelsim and vitis are in path and their settings are loaded.
-  ```
-  exec /datadrive/StaRR-NIC/starrnic-tools/fpga_setup.sh  # on neptune*
-  ```
+- Ensure modelsim and vitis are in path and their settings are loaded, e.g., `exec scripts/sample_toolchain_setup.sh`.
 - For hardware (bitstream generation)
   ```
-  cd script
-
+  cd $STARRNIC_SHELL/script
   vivado -mode tcl -source ./build.tcl -tclargs \
-  -board_repo /datadrive/board-files -board au50 \
-  -impl 1 -post_impl 1 -user_plugin ../plugin/stream-switch \
-  -tag <any tag you wan to add>
+  -board_repo /datadrive/board-files -board au280 \
+  -impl 1 -post_impl 1 -user_plugin ../plugin/stream-switch-dfx \
+  -tag <any tag you want to add> -pr 1
+
+  # The -pr flag denotes whether the design should support partial reconfiguration (PR) or not.
+  # Setting -pr 0 allows testing/debugging the static FPGA design.
+  # Setting -pr 1 enables PR.
 
   # This will create bitstream in (if there were no errors)
-  build/au50_<tag>/open_nic_shell/open_nic_shell.runs/impl_1/open_nic_shell.bit
+  $STARRNIC_SHELL/build/au280_<tag>/open_nic_shell/open_nic_shell.runs/impl_1/open_nic_shell.bit
   # Check runme.log for errors in the directory for the run that failed.
   ```
 - For simulation (generating simulation sources and dependencies for module)
-  - E.g. for `stream_switch_250mhz` module (this can also be used for any modules that `stream_switch_250mhz` instantiates):
+  - E.g. for `stream_switch_dfx` module (this can also be used for any verilog modules that are instantiated within the `stream_switch_dfx` hierarchy):
     ```
     cd script
 
     vivado -mode tcl -source ./build.tcl -tclargs \
-    -board_repo /datadrive/board-files -board au50 \
-    -user_plugin ../plugin/stream-switch \
+    -board_repo /datadrive/board-files -board au280 \
+    -user_plugin ../plugin/stream-switch-dfx \
     -sim 1 -sim_lib_path $HOME/opt/xilinx_sim_libs/Vivado2020.2/compile_simlib \
-    -sim_path /home/ubuntu/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64 \
-    -sim_top stream_switch_250mhz
+    -sim_path $HOME/opt/modelsim/modelsim-se_2020.1/modeltech/linux_x86_64 \
+    -sim_top stream_switch_dfx -pr 0
     ```
-  - `sim_lib_path` specifies libraries used by Xilinx IPs.
-  - If dir pointed by `sim_lib_path` is empty, the build script will compile and install the sim libraries. (this is one time and can take ~hours).
+  - <b>Ensure that that partial reconfiguration is disabled when building for simulation. </b>
+  - `sim_lib_path` specifies libraries used by Xilinx IPs. If the directory pointed by `sim_lib_path` is empty, the build script will compile and install the sim libraries. (this is one time and can take ~hours). These libraries can be used across Xilinx projects.
   - `sim_path` is path to modelsim installation
-  - This command will create simulation sources in `build/au50/open_nic_shell_<tag>/open_nic_shell.sim/sim_1/behav/modelsim` for any module instantiated within `sim_top`
+  - This command will create simulation sources in `build/au280_<tag>/open_nic_shell/open_nic_shell.sim/sim_1/behav/modelsim` and can be used to simulate any module instantiated within `sim_top`.
 
 ## Running on hardware
-- Program the FPGA (use script/program_fpga.sh)
+- Program the FPGA (use `$STARRNIC_SHELL/script/program_fpga.sh`)
   ```
-  ./script/program_fpga.sh 3b:00.0 ../build/au50_stream_switch_pkt_size_counter/open_nic_shell/open_nic_shell.runs/impl_1/open_nic_shell.bit au50
+  EXTENDED_DEVICE_BDF1=0000:86:00.0 EXTENDED_DEVICE_BDF2=0000:86:00.1 ./script/program_fpga.sh ./build/au280_<tag>/open_nic_shell/open_nic_shell.runs/impl_1/open_nic_shell.bit au280
   ```
-  The first time you program, you also need to warm reboot the machine as the FPGA pcie device changes from an accelerator to a memory controller.
+  The first time you program, you also need to warm reboot the machine as the FPGA pcie device changes from an accelerator to a memory controller. You do not need to warm reboot if you already have a open nic design running on the FPGA.
 - Configure the NIC
-  - If using `stream_switch_250mhz` plugin, then run/refer:
+  - If using `stream_switch_dfx` plugin, then run/refer:
     ```
-    ./script/configure_stream_switch.sh
+    ./script/configure_stream_switch_demux.sh
+    # This script configures the on FPGA interconnect and also configures the netdev interfaces.
     ```
-  - For older plugins:
+  - For other plugins:
     - Install `open-nic-driver`
       ```
       # From open-nic-driver root
@@ -106,29 +115,27 @@
       ```
     - Set ip and bring FPGA dev if up
       ```
-      # on neptune1 (The IPs are based on sonic switch configuration)
-      sudo ifconfig enp59s0 10.0.0.57/24 up
+      sudo ifconfig $STARRNIC_IFACE1 $STARRNIC_IP1/24 up
       ```
 - Test by pinging
   ```
-  # Ping neptune4
   ping 10.0.0.61
   ```
-- Read packet size counter in hex (for `stream_switch_250mhz`) (bus `0000:3b:00.0` for au50 on neptune1)
+- Read packet size counter in hex (for `stream_switch_dfx`)
   ```
-  sudo ./pcimem /sys/bus/pci/devices/0000:3b:00.0/resource2 0x140000
+  sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x140000
   ```
 
 ## Running simulation
 ```
-cd build/au50/open_nic_shell_<tag>/open_nic_shell.sim/sim_1/behav/modelsim
+cd $STARRNIC_SHELL/build/au280_<tag>/open_nic_shell/open_nic_shell.sim/sim_1/behav/modelsim
 # Copy over common scripts used by all tests (one time)
-ln -s /home/ubuntu/Projects/StaRR-NIC/open-nic-shell/tb/script/* ./
+ln -s $STARRNIC_SHELL/tb/script/* ./
 
 # Copy over scripts used by specific test
-ln -s /home/ubuntu/Projects/StaRR-NIC/open-nic-shell/tb/<module-to-test>/* ./
-## E.g. for stream_switch_250mhz
-ln -s /home/ubuntu/Projects/StaRR-NIC/open-nic-shell/tb/stream_switch_250mhz/* ./
+ln -s $STARRNIC_SHELL/tb/<module-to-test>/* ./
+## E.g. for stream_switch_dfx
+ln -s $STARRNIC_SHELL/tb/stream_switch_dfx/* ./
 
 # Compile the simulation files using modelsim
 ./compile.sh # (autogenerated during building step by vivado)
@@ -136,9 +143,28 @@ ln -s /home/ubuntu/Projects/StaRR-NIC/open-nic-shell/tb/stream_switch_250mhz/* .
 # Run the simulation
 DUT=<module-to-test> GUI=0 DEBUG=0 ./run.sh
 ## E.g.,
-DUT=stream_switch_250mhz GUI=0 DEBUG=0 ./run.sh
+DUT=stream_switch_dfx GUI=0 DEBUG=0 ./run.sh
 ## Set GUI=1 to see waveform
 ```
+
+## Stream-switch-dfx plugin overview
+This is a plugin that fits in the user logic box of the Open NIC shell. In this plugin we instantiate an interconnect and some packet processing modules (applications). The interconnect allows us to control how traffic is diverted to different applications. In the basic benchmarking workflow, we hanve a single region that holds the applications and the interconnect either sends traffic to the application or bypasses the application. To perform the reconfiguration operation, we bypass the application. Then we upload the new partial bitstream that reprograms the application area. Lastly, we start diverting traffic back to the application area. In this process there is no loss in throughput and there is no packet loss. There may be a minor bump in latency when the interconnect is reprogrammed.
+
+## Performing partial reconfiguration
+- Follow "build" instructions to build the stream-switch-dfx plugin.
+- Follow "running on hardware" instructions to program the FPGA and configure the interconnect.
+- `sudo ifconfig $STARRNIC_IFACE1 down`. We use U280 board with 2 QSFP ports. Our benchmarking setup consists of a U280 board connected to a traffic generator and receiver. The traffic generator sends packets on the QSFP port 0, the FPGA fowards these packets to QSFP port 1, these are then received by the reciever. The generator and reciever share the same hardware clock allowing us to measure latency and the packets never cross the PCIe interface on the U280 allowing us to avoid PCIe bottlenecks in the microbenchmarking process. Hence, we disable the netdec interfaces.
+- When you build with `-pr 1`, there will be multiple partial bitstreams in the build directory, one in each implementation run (e.g., `impl_1`, `child_0_impl_1` in `$STARRNIC_SHELL/build/au280/open_nic_shell/open_nic_shell.runs/`).
+- `$STARRNIC_SHELL/scripts/setup_p4_reg.sh`. This configures updates on packet headers. In our benchmarking design, packets are forwarded from QSFP0 to QSFP1, our traffic generator expectes a UDP socket between the sender and receiver. We use a Xilinx P4 module to manupulate packet headers emulate the UDP socket (this basically involves swapping the MAC, IP and port numbers). Depending on how you use our code, what licenses you have, and what your traffic generator expects, you may want to modify this module and its configuration.
+- Use the `replace_pr.sh` script to reconfigure the FPGA.
+  ```
+  $STARRNIC_SHELL/scripts/replace_pr.sh $STARRNIC_SHELL/build/au280/open_nic_shell/open_nic_shell.runs/impl_1/box_250mhz_inst_stream_switch_dfx_inst_partition1_rm_intf_inst_pkt_size_counter_partial.bit au280
+  ```
+  This script manages the configuration of the interconnect as well as the reconfigurable regions on the FPGA.
+---
+---
+
+Below is a copy of the documentation provided by Xilinx AMD for OpenNIC Shell.
 
 # OpenNIC Shell
 

@@ -34,7 +34,7 @@ sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1
 # sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100004 w 0x0
 # sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x100000 w 0x1
 
-ping 10.0.0.61 -c 1  # this is IP of Intel XL710 NIC. Since this is on switch, all devices can access this.
+ping 10.0.0.61 -c 1  # In our setup this is the IP of an Intel XL710 NIC on the same local network.
 
 # Read counter
 sudo $PCIMEM /sys/bus/pci/devices/$EXTENDED_DEVICE_BDF1/resource2 0x140000

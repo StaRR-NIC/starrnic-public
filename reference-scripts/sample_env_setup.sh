@@ -1,0 +1,9 @@
+  export PCIMEM_PATH="$HOME/opt/pcimem"
+  export PCIMEM="$PCIMEM_PATH/pcimem"
+  export STARRNIC_SHELL="$HOME/Projects/StaRR-NIC/starrnic-public"
+  export EXTENDED_DEVICE_BDF1="0000:86:00.0"
+  export EXTENDED_DEVICE_BDF2="0000:86:00.1"
+  export STARRNIC_IP1="10.0.0.55"
+  export STARRNIC_IP2="10.0.0.53"
+  export STARRNIC_IFACE1=enp134s0f0
+  export STARRNIC_IFACE2=enp134s0f1
