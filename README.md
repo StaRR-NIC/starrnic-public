@@ -7,7 +7,10 @@ This code accompanies the technical report:
 Title: StaRRNIC: Enabling Runtime Reconfigurable FPGA NICs  
 Authors: Anup Agarwal (Carnegie Mellon University), Daehyeok Kim (University of Texas at Austin), Srinivasan Seshan (Carnegie Mellon University)</b>
 
-The technical report is to be released (expected March 2023).
+CMU technical reports can be found at:
+http://reports-archive.adm.cs.cmu.edu/cs.html. A copy of the technical report
+is also in the root directory of this repository
+(StaRRNIC-CMU_TechReport-20230405.pdf).
 
 This is a work in progress. For any questions/concerns/feedback, please email anupa@andrew.cmu.edu.
 
